@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 
-use Test::More tests => 6;
+use Test::More;
 use Test::Deep;
 use Test::Exception;
 
@@ -327,3 +327,121 @@ subtest 'Check arrays' => sub {
     );
 };
 
+# is_long_between()
+#
+
+subtest is_long_between => sub {
+    $input = { a => '12345' };
+    $rules = {
+        fields => [qw/a/],
+        checks => [ a => is_long_between( 3, 5 ) ]
+    };
+
+    is_deeply(
+        validate( $input, $rules ),
+        { success => 1, data => { a => '12345' }, error => {} },
+        "is_long_between() test 1"
+    );
+
+    $input = { a => '123456' };
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '123456' },
+            error   => { a => 'Must be between 3 and 5 symbols' }
+        },
+        "is_long_between() test 2"
+    );
+
+    $rules->{checks} = [ a => is_long_between( 3, 5, 'Error' ) ];
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '123456' },
+            error   => { a => 'Error' }
+        },
+        "is_long_between() test 3"
+    );
+};
+
+# is_long_at_least
+#
+
+subtest is_long_at_least => sub {
+    $input = { a => '12345' };
+    $rules = {
+        fields => [qw/a/],
+        checks => [ a => is_long_at_least( 5 ) ]
+    };
+
+    is_deeply(
+        validate( $input, $rules ),
+        { success => 1, data => { a => '12345' }, error => {} },
+        "is_long_at_least() test 1"
+    );
+
+    $input = { a => '12' };
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '12' },
+            error   => { a => 'Must be at least 5 symbols' }
+        },
+        "is_long_at_least() test 2"
+    );
+
+    $rules->{checks} = [ a => is_long_at_least( 5, 'Error' ) ];
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '12' },
+            error   => { a => 'Error' }
+        },
+        "is_long_at_least() test 3"
+    );
+};
+
+# is_long_at_most
+#
+
+subtest is_long_at_most => sub {
+    $input = { a => '12345' };
+    $rules = {
+        fields => [qw/a/],
+        checks => [ a => is_long_at_most( 5 ) ]
+    };
+
+    is_deeply(
+        validate( $input, $rules ),
+        { success => 1, data => { a => '12345' }, error => {} },
+        "is_long_at_most() test 1"
+    );
+
+    $input = { a => '1234567' };
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '1234567' },
+            error   => { a => 'Must be at the most 5 symbols' }
+        },
+        "is_long_at_most() test 2"
+    );
+
+    $rules->{checks} = [ a => is_long_at_most( 5, 'Error' ) ];
+    is_deeply(
+        validate( $input, $rules ),
+        {
+            success => 0,
+            data    => { a => '1234567' },
+            error   => { a => 'Error' }
+        },
+        "is_long_at_most() test 3"
+    );
+};
+
+done_testing();

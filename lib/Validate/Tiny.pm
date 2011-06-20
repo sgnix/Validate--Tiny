@@ -3,10 +3,30 @@ package Validate::Tiny;
 use v5.10;
 use strict;
 use warnings;
+use utf8;
 
 use base 'Exporter';
-our @EXPORT_OK = qw/validate filter is_required is_equal/;
-our %EXPORT_TAGS = ( util => [qw/filter is_required is_equal/] );
+
+our @EXPORT_OK = qw/
+    validate 
+    filter 
+    is_required 
+    is_equal 
+    is_long_between 
+    is_long_at_least 
+    is_long_at_most
+/;
+
+our %EXPORT_TAGS = (
+    util => [qw/
+        filter 
+        is_required 
+        is_equal 
+        is_long_between 
+        is_long_at_least 
+        is_long_at_most
+    /]
+);
 
 use List::MoreUtils qw/natatime/;
 
@@ -16,17 +36,15 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
 Filter and validate user input from forms, etc.
-
-Example:
 
     use Validate::Tiny qw/validate :util/;
 
@@ -302,7 +320,7 @@ is available in the same fashion as chaining filter subroutines.
 The difference between chaining filters and chaining checks is that
 a chain of filters will always run B<all> filters, and a chain of checks
 will exit after the first failed check and return its error message.
-This way the C<$result->{error}> hash always has a single error message 
+This way the C<$result-E<gt>{error}> hash always has a single error message 
 per field. 
 
 =head4 Using closures
@@ -535,6 +553,61 @@ sub is_equal {
         return defined $_[1]->{$other} && $_[0] eq $_[1]->{$other}
           ? undef
           : $err_msg;
+    };
+}
+
+
+=head2 is_long_between()
+    
+    is_long_between( $min, $max, $opt_error_msg )
+
+Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally you
+can provide a custom error message. The default is I<Invalid value>.
+
+=cut
+
+sub is_long_between {
+    my ( $min, $max, $err_msg ) = @_;
+    $err_msg ||= "Must be between $min and $max symbols";
+    return sub {
+        length( $_[0] ) >= $min && length( $_[0] ) <= $max
+          ? undef
+          : $err_msg;
+    };
+}
+
+=head2 is_long_at_least()
+    
+    is_long_at_least( $length, $opt_error_msg )
+
+Checks if the length of the value is >= C<$length>. Optionally you can 
+provide a custom error message. The default is I<Must be at least %i symbols>.
+
+=cut
+
+sub is_long_at_least {
+    my ( $length, $err_msg ) = @_;
+    $err_msg ||= "Must be at least $length symbols";
+    return sub {
+        length( $_[0] ) >= $length ? undef : $err_msg;
+    };
+}
+
+=head2 is_long_at_most()
+    
+    is_long_at_most( $length, $opt_error_msg )
+
+Checks if the length of the value is >= C<$length>. Optionally you can 
+provide a custom error message. The default is 
+I<Must be at the most  %i symbols>.
+
+=cut
+
+sub is_long_at_most {
+    my ( $length, $err_msg ) = @_;
+    $err_msg ||= "Must be at the most $length symbols";
+    return sub {
+        length( $_[0] ) <= $length ? undef : $err_msg;
     };
 }
 
