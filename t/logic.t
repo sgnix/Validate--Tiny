@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 
-use Test::More;
+use Test::More tests => 9;
 use Test::Deep;
 use Test::Exception;
 
@@ -444,4 +444,3 @@ subtest is_long_at_most => sub {
     );
 };
 
-done_testing();
