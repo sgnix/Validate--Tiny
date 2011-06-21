@@ -462,13 +462,17 @@ Provides a shortcut to some basic text filters. In reality, it returns
 a list of anonymous subs, so the following:
 
     my $rules = {
-        filters => filter('lc', 'ucfirst')
+        filters => [
+            email => filter('lc', 'ucfirst')
+        ]
     };
 
 is equivalent to this:
 
     my $rules = {
-        filters => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
+        filters => [ 
+            email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
+        ]
     };
 
 It provides a shortcut for the following filters:
