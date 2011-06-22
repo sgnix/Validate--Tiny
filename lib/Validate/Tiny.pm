@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -563,7 +563,11 @@ sub is_equal {
 
 =head2 is_long_between()
     
-    is_long_between( $min, $max, $opt_error_msg )
+    my $rules = {
+        checks => [
+            username => is_is_long_between( 6, 25, 'Bad username' )
+        ]
+    };
 
 Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally you
 can provide a custom error message. The default is I<Invalid value>.
@@ -582,7 +586,11 @@ sub is_long_between {
 
 =head2 is_long_at_least()
     
-    is_long_at_least( $length, $opt_error_msg )
+    my $rules = {
+        checks => [
+            zip_code => is_is_long_at_least( 5, 'Bad zip code' )
+        ]
+    };
 
 Checks if the length of the value is >= C<$length>. Optionally you can 
 provide a custom error message. The default is I<Must be at least %i symbols>.
@@ -599,11 +607,15 @@ sub is_long_at_least {
 
 =head2 is_long_at_most()
     
-    is_long_at_most( $length, $opt_error_msg )
+    my $rules = {
+        checks => [
+            city_name => is_is_long_at_most( 40, 'City name is too long' )
+        ]
+    };
 
-Checks if the length of the value is >= C<$length>. Optionally you can 
+Checks if the length of the value is <= C<$length>. Optionally you can 
 provide a custom error message. The default is 
-I<Must be at the most  %i symbols>.
+I<Must be at the most %i symbols>.
 
 =cut
 
