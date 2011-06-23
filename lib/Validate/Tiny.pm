@@ -132,18 +132,18 @@ Validate::Tiny breaks this process in three steps:
 
 =item 1
 
-Specify the fields you want to work with via L<fields>. 
+Specify the fields you want to work with via L</fields>. 
 All others will be disregarded.
 
 =item 2
 
-Filter the fields' values using L<filters>. A filter 
+Filter the fields' values using L</filters>. A filter 
 can be as simple as changing to lower case or removing excess white space,
 or very complicated such as parsing and removing HTML tags.
 
 =item 3
 
-Perform a series of L<checks> on the filtered values, to make sure 
+Perform a series of L</checks> on the filtered values, to make sure 
 they match the requirements. Again, the checks can be very simple as in
 checking if the value was defined, or very complicated as in checking if 
 the value is a valid credit card number.
@@ -159,7 +159,8 @@ each field.
 
 This module does not automatically export anything. You can optionally
 export C<validate> and the following basic utility functions via the 
-C<:util> tag: L<filter>, L<is_required>, L<is_equal>
+C<:util> tag: L</filter()>, L</is_required()>, L</is_equal()>, 
+L</is_long_between()>, L</is_long_at_least()>, L</is_long_at_most()>.
 
 =head1 SUBROUTINES
 
@@ -181,7 +182,7 @@ a reference to a hash.
     );
 
 C<rules> is a hash containing references to the following three
-arrays: L<fields>, L<filters> and L<checks>.
+arrays: L</fields>, L</filters> and L</checks>.
 
 =head4 fields
 
@@ -227,7 +228,7 @@ to provide a chain of filters:
 The above example will first lowercase the value then uppercase its first 
 letter. 
 
-Some simple text filters are provided by the L<filter> subroutine.
+Some simple text filters are provided by the L</filter()> subroutine.
 
     use Validate::Tiny qw/validate :util/;
     
@@ -562,7 +563,7 @@ sub is_equal {
 
 
 =head2 is_long_between()
-    
+
     my $rules = {
         checks => [
             username => is_is_long_between( 6, 25, 'Bad username' )
@@ -585,7 +586,7 @@ sub is_long_between {
 }
 
 =head2 is_long_at_least()
-    
+
     my $rules = {
         checks => [
             zip_code => is_is_long_at_least( 5, 'Bad zip code' )
@@ -606,7 +607,7 @@ sub is_long_at_least {
 }
 
 =head2 is_long_at_most()
-    
+
     my $rules = {
         checks => [
             city_name => is_is_long_at_most( 40, 'City name is too long' )
