@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/perl
 
 use Test::More tests => 9;
 
@@ -58,14 +58,31 @@ SKIP: {
 }
 
 subtest 'Filters' => sub {
-    my $ok = { success => 1, error => {}, data => { a => 'Jane Doe' } };
+
+    # Input
     $input = { a => '   Jane   Doe   ' };
+
+    # Test if just one filter works
+    is_deeply(
+        validate(
+            $input,
+            {
+                fields  => [qw/a/],
+                filters => [ a => filter('trim') ]
+            }
+        ),
+        { success => 1, error => {}, data => { a => 'Jane   Doe' } },
+        'Single filter'
+    );
+
+    # Test if filter chaining works
+    my $ok = { success => 1, error => {}, data => { a => 'Jane Doe' } };
     $rules = {
         fields  => [qw/a/],
         filters => [ a => [ filter('trim'), filter('strip') ] ]
     };
-    is_deeply( validate( $input, $rules ), $ok, 'Filters 1' );
 
+    is_deeply( validate( $input, $rules ), $ok, 'Filters 1' );
     ###
 
     $rules->{filters} = [ a => filter(qw/trim strip/) ];
@@ -75,6 +92,11 @@ subtest 'Filters' => sub {
 
     $rules->{filters} = [ a => [ filter(qw/trim strip/) ] ];
     is_deeply( validate( $input, $rules ), $ok, 'Filters 3' );
+
+    ###
+
+    $rules->{filters} = [ a => filter('trim'), a => filter('strip') ];
+    is_deeply( validate( $input, $rules ), $ok, 'Filters 4' );
 
     ###
 
@@ -209,6 +231,71 @@ subtest 'Checks' => sub {
             error   => { a => 'Error' }
         },
         'Custom check 1'
+    );
+
+    ###
+
+    $rules = {
+            fields => ['a'],
+            checks => [
+                a => [is_required(), is_long_at_least(5, 'Error')]
+            ]
+    };
+    $result = validate( { a => 'something' }, $rules );
+    is_deeply(
+        $result,
+        {
+            success => 1,
+            data    => { a => 'something' },
+            error   => {}
+        },
+        'check chaining 1'
+    );
+
+    ###
+    
+    $result = validate( { a => 'so' }, $rules );
+    is_deeply(
+        $result, 
+        {
+            success => 0,
+            data => { a => 'so' },
+            error => { a => 'Error' }
+        },
+        'check chaining 2'
+    );
+
+    ###
+
+    $rules = {
+            fields => ['a'],
+            checks => [
+                a => is_required(), 
+                a => is_long_at_least(5, 'Error')
+            ]
+    };
+    $result = validate( { a => 'something' }, $rules );
+    is_deeply(
+        $result,
+        {
+            success => 1,
+            data    => { a => 'something' },
+            error   => {}
+        },
+        'check chaining 3'
+    );
+
+    ###
+
+    $result = validate( { a => 'so' }, $rules );
+    is_deeply(
+        $result, 
+        {
+            success => 0,
+            data => { a => 'so' },
+            error => { a => 'Error' }
+        },
+        'check chaining 4'
     );
 
 };

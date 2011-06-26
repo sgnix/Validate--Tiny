@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.031
+Version 0.04
 
 =cut
 
-our $VERSION = '0.031';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -419,7 +419,7 @@ sub validate {
 
 sub _run_code {
     my ( $code, $value, $param ) = @_;
-    my $result = defined $param ? undef : $value;
+    my $result = $value;
     if ( ref $code eq 'CODE' ) {
         $result = $code->( $value, $param );
         $value = $result unless defined $param;
@@ -448,8 +448,13 @@ sub _process {
     my $iterator = natatime 2, @$pairs;
     while ( my ( $match, $code ) = $iterator->() ) {
         if ( $key ~~ $match ) {
-            $value = _run_code( $code, $value, $check ? $param : undef );
-            return $value if $check and $value;
+            my $temp = _run_code( $code, $value, $check ? $param : undef );
+            if ( $check ) {
+                return $temp if $temp
+            }
+            else {
+                $value = $temp;
+            }
         }
     }
     return $check ? undef : $value;
