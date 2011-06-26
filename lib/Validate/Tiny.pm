@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.03
+Version 0.031
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.031';
 
 =head1 SYNOPSIS
 
@@ -81,13 +81,13 @@ Filter and validate user input from forms, etc.
 
             # custom sub validates an email address
             email => sub {
-                my ( $param, $value ) = @_;
+                my ( $value, $params ) = @_;
                 Email::Valid->address($value) ? undef : 'Invalid email';
             },
 
             # custom sub to validate gender
             gender => sub {
-                my ( $param, $value ) = @_;
+                my ( $value, $params ) = @_;
                 return $value eq 'M'
                   || $value eq 'F' ? undef : 'Invalid gender';
             }
