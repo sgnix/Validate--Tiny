@@ -222,7 +222,7 @@ Instead of a single filter subroutine, you can pass an array of subroutines
 to provide a chain of filters:
 
     my @filters_array = ( 
-        qr/.+/ = [ sub { lc $_[0] }, sub { ucfirst $_[0] } ] 
+        qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ] 
     );
 
 The above example will first lowercase the value then uppercase its first 
