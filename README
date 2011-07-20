@@ -1,37 +1,411 @@
-Validate-Tiny
+NAME
+    Validate::Tiny - Minimalistic data validation
 
-This is a Perl module that provides minimalistic data validation. Use the CPAN link to read the documentation and how to use it. 
+VERSION
+    Version 0.04
 
-http://search.cpan.org/dist/Validate-Tiny/
+SYNOPSIS
+    Filter and validate user input from forms, etc.
 
-INSTALLATION
+        use Validate::Tiny qw/validate :util/;
 
-To install this module, run the following commands:
+        my $rules = {
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+            # List of fields to look for
+            fields => [qw/name email pass pass2 gender/],
 
-SUPPORT AND DOCUMENTATION
+            # Filters to run on all fields
+            filters => [
 
-After installing, you can find documentation for this module with the
-perldoc command.
+                # Remove spaces from all
+                qr/.+/ => filter(qw/trim strip/),
 
-    perldoc Validate::Tiny
+                # Lowercase email
+                email => filter('lc'),
 
-You can also look for information at:
+                # Remove non-alphanumeric symbols from
+                # both passwords
+                qr/pass?/ => sub {
+                    $_[0] =~ s/\W/./g;
+                    $_[0];
+                },
+            ],
 
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Validate-Tiny
+            # Checks to perform on all fields
+            checks => [
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Validate-Tiny
+                # All of these are required
+                [qw/name email pass pass2/] => is_required(),
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/Validate-Tiny
+                # pass2 must be equal to pass
+                pass2 => is_equal('pass'),
 
-    Search CPAN
-        http://search.cpan.org/dist/Validate-Tiny/
+                # custom sub validates an email address
+                email => sub {
+                    my ( $value, $params ) = @_;
+                    Email::Valid->address($value) ? undef : 'Invalid email';
+                },
 
+                # custom sub to validate gender
+                gender => sub {
+                    my ( $value, $params ) = @_;
+                    return $value eq 'M'
+                      || $value eq 'F' ? undef : 'Invalid gender';
+                }
+
+            ]
+        };
+
+        # Validate the input agains the rules
+        my $result = validate( $input, $rules );
+
+        if ( $result->{success} ) {
+            my $values_hash = $result->{data};
+            ...
+        }
+        else {
+            my $errors_hash = $result->{error};
+            ...
+        }
+
+        ...
+
+DESCRIPTION
+    This module provides a simple, light and minimalistic way of validating
+    user input. Except perl core modules and some test modules it has no
+    other dependencies, which is why it does not implement any complicated
+    checks and filters such as email and credit card matching. The basic
+    idea of this module is to provide the validation functionality, and
+    leave it up to the user to write their own data filters and checks. If
+    you need a complete data validation solution that comes with many ready
+    features, I recommend you to take a look at Data::FormValidator. If your
+    validation logic is not too complicated or your form is relatively
+    short, this module is a decent candidate for your project.
+
+LOGIC
+    The basic principle of data/form validation is that any user input must
+    be sanitized and checked for errors before used in the logic of the
+    program. Validate::Tiny breaks this process in three steps:
+
+    1   Specify the fields you want to work with via "fields". All others
+        will be disregarded.
+
+    2   Filter the fields' values using "filters". A filter can be as simple
+        as changing to lower case or removing excess white space, or very
+        complicated such as parsing and removing HTML tags.
+
+    3   Perform a series of "checks" on the filtered values, to make sure
+        they match the requirements. Again, the checks can be very simple as
+        in checking if the value was defined, or very complicated as in
+        checking if the value is a valid credit card number.
+
+    The validation returns a hash ref which contains "success" => 1|0,
+    "data" and "error" hashes. If success is 1, "data" will contain the
+    filtered values, otherwise "error" will contain the error messages for
+    each field.
+
+EXPORT
+    This module does not automatically export anything. You can optionally
+    export "validate" and the following basic utility functions via the
+    ":util" tag: "filter()", "is_required()", "is_equal()",
+    "is_long_between()", "is_long_at_least()", "is_long_at_most()".
+
+SUBROUTINES
+  validate()
+        use Validate::Tiny qw/validate/;
+
+        my $result = validate( \%input, \%rules );
+
+    Validates user input against a set of rules. The input is expected to be
+    a reference to a hash.
+
+   %rules
+        my %rules = (
+            fields  => \@field_names,
+            filters => \@filters_array,
+            checks  => \@checks_array
+        );
+
+    "rules" is a hash containing references to the following three arrays:
+    "fields", "filters" and "checks".
+
+   fields
+    An array containing the names of the fields that must be filtered,
+    checked and returned. All others will be disregarded.
+
+        my @field_names = qw/username email password password2/;
+
+   filters
+    An array containing name matches and filter subs. The array must have an
+    even number of elements. Each *odd* element is a field name match and
+    each *even* element is a reference to a filter subroutine or a chain of
+    filter subroutines. A filter subroutine takes one parameter - the value
+    to be filtered, and returns the modified value.
+
+        my @filters_array = (
+            email => sub { return lc $_[0] },    # Lowercase the email
+            password =>
+              sub { $_[0] =~ s/\s//g; $_[0] }    # Remove spaces from password
+        );
+
+    The field name is matched with the perl smart match operator, so you
+    could have a regular expression or a reference to an array to match
+    several fields:
+
+        my @filters_array = (
+            qr/.+/ => sub { lc $_[0] },    # Lowercase ALL
+
+            [qw/password password2/] => sub {    # Remove spaces from both
+                $_[0] =~ s/\s//g;                # password and password2
+                $_[0];
+            }
+        );
+
+    Instead of a single filter subroutine, you can pass an array of
+    subroutines to provide a chain of filters:
+
+        my @filters_array = ( 
+            qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ] 
+        );
+
+    The above example will first lowercase the value then uppercase its
+    first letter.
+
+    Some simple text filters are provided by the "filter()" subroutine.
+
+        use Validate::Tiny qw/validate :util/;
+    
+        my @filters_array = (
+            name => filter(qw/strip trim lc/)
+        );
+
+   checks
+    An array ref containing name matches and check subs. The array must have
+    an even number of elements. Each *odd* element is a field name match and
+    each *even* element is a reference to a check subroutine or a chain of
+    check subroutines.
+
+    A check subroutine takes two parameters - the value to be checked and a
+    reference to the filtered input hash.
+
+    A check subroutine must return undef if the check passes or a string
+    with an error message if the check fails.
+
+    Example:
+
+        # Make sure the password is good
+        sub is_good_password {
+            my ( $value, $params ) = @_;
+
+            if ( !defined $value ) {
+                return undef;
+            }
+
+            if ( length($value) < 6 ) {
+                return "The password is too short";
+            }
+
+            if ( length($value) > 40 ) {
+                return "The password is too long";
+            }
+
+            if ( $value eq $params->{username} ) {
+                return "Your password can not be the same as your username";
+            }
+
+            # At this point we're happy with the password
+            return undef;
+        }
+
+        my $rules = {
+            fields => [qw/username password/],
+            checks => [ 
+                password => \&is_good_password 
+            ]
+        };
+
+    It may be a bit counter-intuitive for some people to return undef when
+    the check passes and a string when it fails. If you have a huge problem
+    with this concept, then this module may not be right for you.
+
+    Important! Notice that in the beginning of "is_good_password" we check
+    if $value is defined and return undef if it is not. This is because it
+    is not the job of "is_good_password" to check if "password" is required.
+    Its job is to determine if the password is good. Consider the following
+    example:
+
+        my $rules = {
+            fields => [qw/username password/],
+            checks => [ 
+                password => [ is_required(), \&is_good_password ] 
+            ]
+        };
+
+    and this one too:
+
+        my $rules = {
+            fields => [qw/username password/],
+            checks => [
+                qr/.+/   => is_required(),
+                password => \&is_good_password
+            ]
+        };
+
+    The above examples show how we make sure that "password" is available
+    before we check if it is a good password. Of course you can check if
+    "password" is defined inside "is_good_password", but it would be
+    redundant.
+
+   Chaining
+    The above example also shows that chaining check subroutines is
+    available in the same fashion as chaining filter subroutines. The
+    difference between chaining filters and chaining checks is that a chain
+    of filters will always run all filters, and a chain of checks will exit
+    after the first failed check and return its error message. This way the
+    "$result->{error}" hash always has a single error message per field.
+
+   Using closures
+    When writing reusable check subroutines, sometimes you will want to be
+    able to pass arguments. Returning closures (anonymous subs) is the
+    recommended approach:
+
+        sub is_long_between {
+            my ( $min, $max ) = @_;
+            return sub {
+                my $value = shift;
+                return length($value) >= $min && length($value) <= $max
+                  ? undef
+                  : "Must be between $min and $max symbols";
+            };
+        }
+
+        my $rules = {
+            fields => qw/password/,
+            checks => [ 
+                password => is_long_between( 6, 40 ) 
+            ]
+        };
+
+   Return value
+    "validate" returns a hash ref with three elements:
+
+        my $result = validate(\%input, \%rules);
+
+        # Now $result looks like this
+        $result = {
+            success => 1,       # or 0 if checks didn't pass
+            data    => \%data,
+            error   => \%error
+        };
+
+    If "success" is 1 all of the filtered input will be in %data, otherwise
+    the error messages will be stored in %error. If "success" is 0, %data
+    may or may not contain values, but its use not recommended.
+
+  filter()
+        filter( $name1, $name2, ... );
+
+    Provides a shortcut to some basic text filters. In reality, it returns a
+    list of anonymous subs, so the following:
+
+        my $rules = {
+            filters => [
+                email => filter('lc', 'ucfirst')
+            ]
+        };
+
+    is equivalent to this:
+
+        my $rules = {
+            filters => [ 
+                email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
+            ]
+        };
+
+    It provides a shortcut for the following filters:
+
+   trim
+    Removes leading and trailing white space.
+
+   strip
+    Shrinks two or more white spaces to one.
+
+   lc
+    Lower case.
+
+   uc
+    Upper case.
+
+   ucfirst
+    Upper case first letter
+
+  is_required()
+        is_required( $opt_error_msg );
+
+    "is_required" provides a shortcut to an anonymous subroutine that checks
+    if the matched field is defined and it is not an empty string.
+    Optionally, you can provide a custom error message to be returned.
+
+  is_equal()
+        is_equal( $other_field_name, $opt_error_msg )
+
+    "is_equal" checks if the value of the matched field is the same as the
+    value of another field within the input hash. Example:
+
+        my $rules = {
+            checks => [
+                password2 => is_equal("password", "Passwords don't match")
+            ]
+        };
+
+  is_long_between()
+        my $rules = {
+            checks => [
+                username => is_is_long_between( 6, 25, 'Bad username' )
+            ]
+        };
+
+    Checks if the length of the value is >= $min and <= $max. Optionally you
+    can provide a custom error message. The default is *Invalid value*.
+
+  is_long_at_least()
+        my $rules = {
+            checks => [
+                zip_code => is_is_long_at_least( 5, 'Bad zip code' )
+            ]
+        };
+
+    Checks if the length of the value is >= $length. Optionally you can
+    provide a custom error message. The default is *Must be at least %i
+    symbols*.
+
+  is_long_at_most()
+        my $rules = {
+            checks => [
+                city_name => is_is_long_at_most( 40, 'City name is too long' )
+            ]
+        };
+
+    Checks if the length of the value is <= $length. Optionally you can
+    provide a custom error message. The default is *Must be at the most %i
+    symbols*.
+
+SEE ALSO
+    Data::FormValidator
+
+AUTHOR
+    minimalist, "<minimalist at lavabit.com>"
+
+BUGS
+    Bug reports and patches are welcome. Reports which include a failing
+    Test::More style test are helpful will receive priority.
+
+    You may also fork the module on Github:
+    https://github.com/naturalist/Validate--Tiny
+
+LICENSE AND COPYRIGHT
+    Copyright 2011 minimalist.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms as perl itself.
 
