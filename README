@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.04
+    Version 0.05
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -398,7 +398,7 @@ AUTHOR
 
 BUGS
     Bug reports and patches are welcome. Reports which include a failing
-    Test::More style test are helpful will receive priority.
+    Test::More style test are helpful and will receive priority.
 
     You may also fork the module on Github:
     https://github.com/naturalist/Validate--Tiny

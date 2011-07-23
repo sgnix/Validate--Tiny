@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -643,8 +643,8 @@ minimalist, C<< <minimalist at lavabit.com> >>
 
 =head1 BUGS
 
-Bug reports and patches are welcome.  Reports which include a failing 
-Test::More style test are helpful will receive priority.
+Bug reports and patches are welcome. Reports which include a failing 
+Test::More style test are helpful and will receive priority.
 
 You may also fork the module on Github:
 https://github.com/naturalist/Validate--Tiny
