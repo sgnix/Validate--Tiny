@@ -2,12 +2,12 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.05
+    Version 0.06
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
 
-        use Validate::Tiny qw/validate :util/;
+        use Validate::Tiny ':all';
 
         my $rules = {
 
@@ -68,7 +68,22 @@ SYNOPSIS
             ...
         }
 
-        ...
+    Or if you prefer an OOP approach:
+
+        use Validate::Tiny;
+
+        my $result = Validate::Tiny->new( $input, $rules );
+        if ( $result->success ) {
+            my $values_hash = $result->data;
+            my $name        = $result->data('name');
+            my $email       = $result->data('email');
+            ...;
+        }
+        else {
+            my $errors_hash = $result->error;
+            my $name_error  = $result->error('name');
+            my $email_error = $result->error('email');
+        }
 
 DESCRIPTION
     This module provides a simple, light and minimalistic way of validating
@@ -106,12 +121,10 @@ LOGIC
 
 EXPORT
     This module does not automatically export anything. You can optionally
-    export "validate" and the following basic utility functions via the
-    ":util" tag: "filter()", "is_required()", "is_equal()",
-    "is_long_between()", "is_long_at_least()", "is_long_at_most()".
+    request any of the below subroutines or use ':all' to export all.
 
-SUBROUTINES
-  validate()
+PROCEDURAL INTERFACE
+  validate
         use Validate::Tiny qw/validate/;
 
         my $result = validate( \%input, \%rules );
@@ -302,7 +315,7 @@ SUBROUTINES
     the error messages will be stored in %error. If "success" is 0, %data
     may or may not contain values, but its use not recommended.
 
-  filter()
+  filter
         filter( $name1, $name2, ... );
 
     Provides a shortcut to some basic text filters. In reality, it returns a
@@ -339,14 +352,14 @@ SUBROUTINES
    ucfirst
     Upper case first letter
 
-  is_required()
+  is_required
         is_required( $opt_error_msg );
 
     "is_required" provides a shortcut to an anonymous subroutine that checks
     if the matched field is defined and it is not an empty string.
     Optionally, you can provide a custom error message to be returned.
 
-  is_equal()
+  is_equal
         is_equal( $other_field_name, $opt_error_msg )
 
     "is_equal" checks if the value of the matched field is the same as the
@@ -358,7 +371,7 @@ SUBROUTINES
             ]
         };
 
-  is_long_between()
+  is_long_between
         my $rules = {
             checks => [
                 username => is_is_long_between( 6, 25, 'Bad username' )
@@ -368,7 +381,7 @@ SUBROUTINES
     Checks if the length of the value is >= $min and <= $max. Optionally you
     can provide a custom error message. The default is *Invalid value*.
 
-  is_long_at_least()
+  is_long_at_least
         my $rules = {
             checks => [
                 zip_code => is_is_long_at_least( 5, 'Bad zip code' )
@@ -379,7 +392,7 @@ SUBROUTINES
     provide a custom error message. The default is *Must be at least %i
     symbols*.
 
-  is_long_at_most()
+  is_long_at_most
         my $rules = {
             checks => [
                 city_name => is_is_long_at_most( 40, 'City name is too long' )
@@ -389,6 +402,52 @@ SUBROUTINES
     Checks if the length of the value is <= $length. Optionally you can
     provide a custom error message. The default is *Must be at the most %i
     symbols*.
+
+OBJECT INTERFACE
+  new
+    Validates the input against the rules and returns a class instance.
+
+        use Validate::Tiny;
+
+        my $result = Validate::Tiny->new( $input, $rules );
+        if ( $result->success ) {
+
+            # Do something with the data
+            $result->data->{name};
+            $result->data('name');
+        }
+        else {
+
+            # Do something with the errors
+            $result->error->{name};
+            $result->error('name');
+        }
+
+  success
+    Returns a true value if the input passed all the rules.
+
+  data
+    Returns a hash reference to all filtered fields. If called with a
+    parameter, it will return the value of that field or croak if there is
+    no such field.
+
+        my $all_fields = $result->data;
+        my $email      = $result->data('email');
+
+        # This will die for there is no 'foo'
+        my $foo = $result->data('foo');
+
+  error
+    Returns a hash reference to all error messages. If called with a
+    parameter, it will return the error message of that field, or croak if
+    there is no such field.
+
+        my $errors = $result->error;
+        my $email = $result->error('email');
+
+  to_hash
+    Return a result hash, much like using the procedural interface. See the
+    output of "validate" for more information.
 
 SEE ALSO
     Data::FormValidator
