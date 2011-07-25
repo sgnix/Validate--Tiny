@@ -1,13 +1,14 @@
 package Validate::Tiny;
 
-use v5.10;
+use 5.010;
 use strict;
 use warnings;
 use utf8;
 
-use base 'Exporter';
+use Carp;
+use List::MoreUtils qw/natatime/;
 
-our @EXPORT_OK = qw/
+my @EXPORT_OK = qw/
     validate 
     filter 
     is_required 
@@ -17,18 +18,17 @@ our @EXPORT_OK = qw/
     is_long_at_most
 /;
 
-our %EXPORT_TAGS = (
-    util => [qw/
-        filter 
-        is_required 
-        is_equal 
-        is_long_between 
-        is_long_at_least 
-        is_long_at_most
-    /]
-);
-
-use List::MoreUtils qw/natatime/;
+sub import {
+    my $class = shift;
+    my $caller = caller;
+    my @rest = ':all' ~~ \@_ ? @EXPORT_OK : @_;
+    no strict 'refs';
+    for my $sub ( @rest ) {
+        if ( $sub ~~ \@EXPORT_OK ) {
+            *{"${caller}::$sub"} = eval("\\\&$sub");
+        }
+    }
+}
 
 =head1 NAME
 
@@ -36,17 +36,17 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 SYNOPSIS
 
 Filter and validate user input from forms, etc.
 
-    use Validate::Tiny qw/validate :util/;
+    use Validate::Tiny ':all';
 
     my $rules = {
 
@@ -107,7 +107,23 @@ Filter and validate user input from forms, etc.
         ...
     }
 
-    ...
+
+Or if you prefer an OOP approach:
+
+    use Validate::Tiny;
+
+    my $result = Validate::Tiny->new( $input, $rules );
+    if ( $result->success ) {
+        my $values_hash = $result->data;
+        my $name        = $result->data('name');
+        my $email       = $result->data('email');
+        ...;
+    }
+    else {
+        my $errors_hash = $result->error;
+        my $name_error  = $result->error('name');
+        my $email_error = $result->error('email');
+    }
 
 =head1 DESCRIPTION 
 
@@ -158,13 +174,11 @@ each field.
 =head1 EXPORT
 
 This module does not automatically export anything. You can optionally
-export C<validate> and the following basic utility functions via the 
-C<:util> tag: L</filter()>, L</is_required()>, L</is_equal()>, 
-L</is_long_between()>, L</is_long_at_least()>, L</is_long_at_most()>.
+request any of the below subroutines or use ':all' to export all.
 
-=head1 SUBROUTINES
+=head1 PROCEDURAL INTERFACE
 
-=head2 validate()
+=head2 validate
 
     use Validate::Tiny qw/validate/;
 
@@ -460,7 +474,7 @@ sub _process {
     return $check ? undef : $value;
 }
 
-=head2 filter()
+=head2 filter
 
     filter( $name1, $name2, ... );
 
@@ -525,7 +539,7 @@ sub filter {
     return \@result;
 }
 
-=head2 is_required()
+=head2 is_required
 
     is_required( $opt_error_msg );
 
@@ -540,7 +554,7 @@ sub is_required {
     return sub { defined $_[0] && $_[0] ne '' ? undef : $err_msg  }
 }
 
-=head2 is_equal()
+=head2 is_equal
 
     is_equal( $other_field_name, $opt_error_msg )
 
@@ -567,7 +581,7 @@ sub is_equal {
 }
 
 
-=head2 is_long_between()
+=head2 is_long_between
 
     my $rules = {
         checks => [
@@ -590,7 +604,7 @@ sub is_long_between {
     };
 }
 
-=head2 is_long_at_least()
+=head2 is_long_at_least
 
     my $rules = {
         checks => [
@@ -611,7 +625,7 @@ sub is_long_at_least {
     };
 }
 
-=head2 is_long_at_most()
+=head2 is_long_at_most
 
     my $rules = {
         checks => [
@@ -632,6 +646,102 @@ sub is_long_at_most {
         length( $_[0] ) <= $length ? undef : $err_msg;
     };
 }
+
+=head1 OBJECT INTERFACE
+
+=head2 new
+
+Validates the input against the rules and returns a class instance.
+
+    use Validate::Tiny;
+
+    my $result = Validate::Tiny->new( $input, $rules );
+    if ( $result->success ) {
+
+        # Do something with the data
+        $result->data->{name};
+        $result->data('name');
+    }
+    else {
+
+        # Do something with the errors
+        $result->error->{name};
+        $result->error('name');
+    }
+
+=head2 success
+
+Returns a true value if the input passed all the rules.
+
+=head2 data
+
+Returns a hash reference to all filtered fields. If called with a parameter,
+it will return the value of that field or croak if there is no such field.
+
+    my $all_fields = $result->data;
+    my $email      = $result->data('email');
+
+    # This will die for there is no 'foo'
+    my $foo = $result->data('foo');
+
+=head2 error
+
+Returns a hash reference to all error messages. If called with a parameter,
+it will return the error message of that field, or croak if there is no such
+field.
+
+    my $errors = $result->error;
+    my $email = $result->error('email');
+
+=head2 to_hash
+
+Return a result hash, much like using the procedural interface. See the output
+of L</validate> for more information.
+
+=cut
+
+sub new {
+    my ( $class, $input, $rules ) = @_;
+    if ( ref $input ne 'HASH' || ref $rules ne 'HASH' ) {
+        confess("Parameters and rules HASH refs are needed");
+    }
+    bless {
+        input  => $input,
+        rules  => $rules,
+        result => validate( $input, $rules )
+    }, $class;
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    our $AUTOLOAD;
+    my $sub = $AUTOLOAD =~ /::(\w+)$/ ? $1 : undef;
+    if ( $sub ~~ [qw/params rules/] ) {
+        return $self->{$sub};
+    }
+    elsif ( $sub ~~ [qw/data error/] ) {
+        if ( @_ ) {
+            return
+              exists $self->{result}->{$sub}->{ $_[0] }
+              ? $self->{result}->{$sub}->{ $_[0] }
+              : confess("Not existing key ${sub}($_[0])");
+        }
+        else {
+            return {%{$self->{result}->{$sub}}};
+        }
+    }
+    elsif ( $sub eq 'success' ) {
+        return $self->{result}->{success}
+    }
+    elsif ( $sub eq 'to_hash' ) {
+        return {%{$self->{result}}}
+    }
+    else {
+        confess "Undefined method $AUTOLOAD";
+    }
+}
+
+sub DESTROY {}
 
 =head1 SEE ALSO
 
