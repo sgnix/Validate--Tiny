@@ -4,7 +4,7 @@ use Test::More;
 
 BEGIN {
     plan skip_all => "Spelling tests only for authors"
-        unless -d 'inc/.author'
+        unless -e '.author'
 }
 
 use Test::Spelling;
