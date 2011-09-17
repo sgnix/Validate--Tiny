@@ -679,7 +679,8 @@ Returns a true value if the input passed all the rules.
 =head2 data
 
 Returns a hash reference to all filtered fields. If called with a parameter,
-it will return the value of that field or croak if there is no such field.
+it will return the value of that field or croak if there is no such field defined
+in the fields array.
 
     my $all_fields = $result->data;
     my $email      = $result->data('email');
