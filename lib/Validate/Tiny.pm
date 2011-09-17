@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 
@@ -684,9 +684,6 @@ it will return the value of that field or croak if there is no such field.
     my $all_fields = $result->data;
     my $email      = $result->data('email');
 
-    # This will die for there is no 'foo'
-    my $foo = $result->data('foo');
-
 =head2 error
 
 Returns a hash reference to all error messages. If called with a parameter,
@@ -723,11 +720,10 @@ sub AUTOLOAD {
         return $self->{$sub};
     }
     elsif ( $sub ~~ [qw/data error/] ) {
-        if ( @_ ) {
-            return
-              exists $self->{result}->{$sub}->{ $_[0] }
-              ? $self->{result}->{$sub}->{ $_[0] }
-              : confess("Not existing key ${sub}($_[0])");
+        if ( my $field = shift ) {
+            return $field ~~ $self->{rules}->{fields}
+                ? $self->{result}->{$sub}->{ $field }
+                : croak("Undefined field $sub($field)");
         }
         else {
             return {%{$self->{result}->{$sub}}};
