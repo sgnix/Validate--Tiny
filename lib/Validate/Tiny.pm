@@ -9,12 +9,12 @@ use Carp;
 use List::MoreUtils qw/natatime/;
 
 my @EXPORT_OK = qw/
-    validate 
-    filter 
-    is_required 
-    is_equal 
-    is_long_between 
-    is_long_at_least 
+    validate
+    filter
+    is_required
+    is_equal
+    is_long_between
+    is_long_at_least
     is_long_at_most
 /;
 
@@ -36,11 +36,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
@@ -125,17 +125,17 @@ Or if you prefer an OOP approach:
         my $email_error = $result->error('email');
     }
 
-=head1 DESCRIPTION 
+=head1 DESCRIPTION
 
 This module provides a simple, light and minimalistic way of validating user
-input. Except perl core modules and some test modules it has no other 
+input. Except perl core modules and some test modules it has no other
 dependencies, which is why it does not implement any complicated checks and
-filters such as email and credit card matching. The basic idea of this 
-module is to provide the validation functionality, and leave it up to the 
-user to write their own data filters and checks. If you need a complete 
+filters such as email and credit card matching. The basic idea of this
+module is to provide the validation functionality, and leave it up to the
+user to write their own data filters and checks. If you need a complete
 data validation solution that comes with many ready features, I recommend
-you to take a look at L<Data::FormValidator>. If your validation logic is 
-not too complicated or your form is relatively short, this module is a 
+you to take a look at L<Data::FormValidator>. If your validation logic is
+not too complicated or your form is relatively short, this module is a
 decent candidate for your project.
 
 =head1 LOGIC
@@ -148,27 +148,27 @@ Validate::Tiny breaks this process in three steps:
 
 =item 1
 
-Specify the fields you want to work with via L</fields>. 
+Specify the fields you want to work with via L</fields>.
 All others will be disregarded.
 
 =item 2
 
-Filter the fields' values using L</filters>. A filter 
+Filter the fields' values using L</filters>. A filter
 can be as simple as changing to lower case or removing excess white space,
 or very complicated such as parsing and removing HTML tags.
 
 =item 3
 
-Perform a series of L</checks> on the filtered values, to make sure 
+Perform a series of L</checks> on the filtered values, to make sure
 they match the requirements. Again, the checks can be very simple as in
-checking if the value was defined, or very complicated as in checking if 
+checking if the value was defined, or very complicated as in checking if
 the value is a valid credit card number.
 
 =back
 
-The validation returns a hash ref which contains C<success> => 1|0, 
-C<data> and C<error> hashes. If success is 1, C<data> will contain the 
-filtered values, otherwise C<error> will contain the error messages for 
+The validation returns a hash ref which contains C<success> => 1|0,
+C<data> and C<error> hashes. If success is 1, C<data> will contain the
+filtered values, otherwise C<error> will contain the error messages for
 each field.
 
 =head1 EXPORT
@@ -185,7 +185,7 @@ request any of the below subroutines or use ':all' to export all.
     my $result = validate( \%input, \%rules );
 
 Validates user input against a set of rules. The input is expected to be
-a reference to a hash. 
+a reference to a hash.
 
 =head3 %rules
 
@@ -200,7 +200,7 @@ arrays: L</fields>, L</filters> and L</checks>.
 
 =head4 fields
 
-An array containing the names of the fields that must be filtered, 
+An array containing the names of the fields that must be filtered,
 checked and returned. All others will be disregarded.
 
     my @field_names = qw/username email password password2/;
@@ -208,7 +208,7 @@ checked and returned. All others will be disregarded.
 =head4 filters
 
 An array containing name matches and filter subs. The array must have
-an even number of elements. Each I<odd> element is a field name match and 
+an even number of elements. Each I<odd> element is a field name match and
 each I<even> element is a reference to a filter subroutine or a chain of
 filter subroutines. A filter subroutine takes one parameter - the value
 to be filtered, and returns the modified value.
@@ -235,17 +235,17 @@ fields:
 Instead of a single filter subroutine, you can pass an array of subroutines
 to provide a chain of filters:
 
-    my @filters_array = ( 
-        qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ] 
+    my @filters_array = (
+        qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ]
     );
 
-The above example will first lowercase the value then uppercase its first 
-letter. 
+The above example will first lowercase the value then uppercase its first
+letter.
 
 Some simple text filters are provided by the L</filter()> subroutine.
 
     use Validate::Tiny qw/validate :util/;
-    
+
     my @filters_array = (
         name => filter(qw/strip trim lc/)
     );
@@ -253,11 +253,11 @@ Some simple text filters are provided by the L</filter()> subroutine.
 =head4 checks
 
 An array ref containing name matches and check subs. The array must have
-an even number of elements. Each I<odd> element is a field name match and 
+an even number of elements. Each I<odd> element is a field name match and
 each I<even> element is a reference to a check subroutine or a chain of
 check subroutines.
 
-A check subroutine takes two parameters - the value to be checked and a 
+A check subroutine takes two parameters - the value to be checked and a
 reference to the filtered input hash.
 
 A check subroutine must return undef if the check passes or a string with
@@ -291,8 +291,8 @@ B<Example:>
 
     my $rules = {
         fields => [qw/username password/],
-        checks => [ 
-            password => \&is_good_password 
+        checks => [
+            password => \&is_good_password
         ]
     };
 
@@ -303,13 +303,13 @@ this concept, then this module may not be right for you.
 B<Important!> Notice that in the beginning of C<is_good_password> we check
 if C<$value> is defined and return undef if it is not. This is because it
 is not the job of C<is_good_password> to check if C<password> is required.
-Its job is to determine if the password is good. Consider the following 
+Its job is to determine if the password is good. Consider the following
 example:
 
     my $rules = {
         fields => [qw/username password/],
-        checks => [ 
-            password => [ is_required(), \&is_good_password ] 
+        checks => [
+            password => [ is_required(), \&is_good_password ]
         ]
     };
 
@@ -325,22 +325,22 @@ and this one too:
 
 The above examples show how we make sure that C<password> is available
 before we check if it is a good password. Of course you can check if
-C<password> is defined inside C<is_good_password>, but it would be 
-redundant. 
+C<password> is defined inside C<is_good_password>, but it would be
+redundant.
 
 =head4 Chaining
 
-The above example also shows that chaining check subroutines 
+The above example also shows that chaining check subroutines
 is available in the same fashion as chaining filter subroutines.
 The difference between chaining filters and chaining checks is that
 a chain of filters will always run B<all> filters, and a chain of checks
 will exit after the first failed check and return its error message.
-This way the C<$result-E<gt>{error}> hash always has a single error message 
-per field. 
+This way the C<$result-E<gt>{error}> hash always has a single error message
+per field.
 
 =head4 Using closures
 
-When writing reusable check subroutines, sometimes you will want to 
+When writing reusable check subroutines, sometimes you will want to
 be able to pass arguments. Returning closures (anonymous subs) is the
 recommended approach:
 
@@ -356,8 +356,8 @@ recommended approach:
 
     my $rules = {
         fields => qw/password/,
-        checks => [ 
-            password => is_long_between( 6, 40 ) 
+        checks => [
+            password => is_long_between( 6, 40 )
         ]
     };
 
@@ -375,9 +375,9 @@ C<validate> returns a hash ref with three elements:
         error   => \%error
     };
 
-If C<success> is 1 all of the filtered input will be in C<%data>, 
+If C<success> is 1 all of the filtered input will be in C<%data>,
 otherwise the error messages will be stored in C<%error>. If C<success>
-is 0, C<%data> may or may not contain values, but its use not 
+is 0, C<%data> may or may not contain values, but its use not
 recommended.
 
 =cut
@@ -490,7 +490,7 @@ a list of anonymous subs, so the following:
 is equivalent to this:
 
     my $rules = {
-        filters => [ 
+        filters => [
             email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
         ]
     };
@@ -558,7 +558,7 @@ sub is_required {
 
     is_equal( $other_field_name, $opt_error_msg )
 
-C<is_equal> checks if the value of the matched field is the same as the 
+C<is_equal> checks if the value of the matched field is the same as the
 value of another field within the input hash. Example:
 
     my $rules = {
@@ -598,6 +598,7 @@ sub is_long_between {
     my ( $min, $max, $err_msg ) = @_;
     $err_msg ||= "Must be between $min and $max symbols";
     return sub {
+        defined $_[0] || return undef;
         length( $_[0] ) >= $min && length( $_[0] ) <= $max
           ? undef
           : $err_msg;
@@ -612,7 +613,7 @@ sub is_long_between {
         ]
     };
 
-Checks if the length of the value is >= C<$length>. Optionally you can 
+Checks if the length of the value is >= C<$length>. Optionally you can
 provide a custom error message. The default is I<Must be at least %i symbols>.
 
 =cut
@@ -621,6 +622,7 @@ sub is_long_at_least {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at least $length symbols";
     return sub {
+        defined $_[0] || return undef;
         length( $_[0] ) >= $length ? undef : $err_msg;
     };
 }
@@ -633,8 +635,8 @@ sub is_long_at_least {
         ]
     };
 
-Checks if the length of the value is <= C<$length>. Optionally you can 
-provide a custom error message. The default is 
+Checks if the length of the value is <= C<$length>. Optionally you can
+provide a custom error message. The default is
 I<Must be at the most %i symbols>.
 
 =cut
@@ -643,6 +645,7 @@ sub is_long_at_most {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at the most $length symbols";
     return sub {
+        defined $_[0] || return undef;
         length( $_[0] ) <= $length ? undef : $err_msg;
     };
 }
@@ -753,7 +756,7 @@ minimalist, C<< <minimalist at lavabit.com> >>
 
 =head1 BUGS
 
-Bug reports and patches are welcome. Reports which include a failing 
+Bug reports and patches are welcome. Reports which include a failing
 Test::More style test are helpful and will receive priority.
 
 You may also fork the module on Github:
@@ -763,7 +766,7 @@ https://github.com/naturalist/Validate--Tiny
 
 Copyright 2011 minimalist.
 
-This program is free software; you can redistribute it and/or modify 
+This program is free software; you can redistribute it and/or modify
 it under the terms as perl itself.
 
 =cut
