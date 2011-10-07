@@ -13,8 +13,8 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
-        'List::MoreUtils' => 0,
+        'Test::More' => 0.94,
+        'Carp'       => 0,
     },
     MIN_PERL_VERSION    => '5.010',
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },

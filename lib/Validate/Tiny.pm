@@ -6,7 +6,6 @@ use warnings;
 use utf8;
 
 use Carp;
-use List::MoreUtils qw/natatime/;
 
 my @EXPORT_OK = qw/
     validate
@@ -36,11 +35,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -459,7 +458,7 @@ sub _run_code {
 sub _process {
     my ( $pairs, $param, $key, $check ) = @_;
     my $value = $param->{$key};
-    my $iterator = natatime 2, @$pairs;
+    my $iterator = natatime(2, @$pairs);
     while ( my ( $match, $code ) = $iterator->() ) {
         if ( $key ~~ $match ) {
             my $temp = _run_code( $code, $value, $check ? $param : undef );
@@ -472,6 +471,14 @@ sub _process {
         }
     }
     return $check ? undef : $value;
+}
+
+sub natatime {
+    my $n    = shift;
+    my @list = @_;
+    return sub {
+        return splice @list, 0, $n;
+    }
 }
 
 =head2 filter
