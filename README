@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.06
+    Version 0.10
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -177,8 +177,8 @@ PROCEDURAL INTERFACE
     Instead of a single filter subroutine, you can pass an array of
     subroutines to provide a chain of filters:
 
-        my @filters_array = ( 
-            qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ] 
+        my @filters_array = (
+            qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ]
         );
 
     The above example will first lowercase the value then uppercase its
@@ -187,7 +187,7 @@ PROCEDURAL INTERFACE
     Some simple text filters are provided by the "filter()" subroutine.
 
         use Validate::Tiny qw/validate :util/;
-    
+
         my @filters_array = (
             name => filter(qw/strip trim lc/)
         );
@@ -232,8 +232,8 @@ PROCEDURAL INTERFACE
 
         my $rules = {
             fields => [qw/username password/],
-            checks => [ 
-                password => \&is_good_password 
+            checks => [
+                password => \&is_good_password
             ]
         };
 
@@ -249,8 +249,8 @@ PROCEDURAL INTERFACE
 
         my $rules = {
             fields => [qw/username password/],
-            checks => [ 
-                password => [ is_required(), \&is_good_password ] 
+            checks => [
+                password => [ is_required(), \&is_good_password ]
             ]
         };
 
@@ -294,8 +294,8 @@ PROCEDURAL INTERFACE
 
         my $rules = {
             fields => qw/password/,
-            checks => [ 
-                password => is_long_between( 6, 40 ) 
+            checks => [
+                password => is_long_between( 6, 40 )
             ]
         };
 
@@ -330,7 +330,7 @@ PROCEDURAL INTERFACE
     is equivalent to this:
 
         my $rules = {
-            filters => [ 
+            filters => [
                 email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
             ]
         };
@@ -374,7 +374,7 @@ PROCEDURAL INTERFACE
   is_long_between
         my $rules = {
             checks => [
-                username => is_is_long_between( 6, 25, 'Bad username' )
+                username => is_long_between( 6, 25, 'Bad username' )
             ]
         };
 
@@ -384,7 +384,7 @@ PROCEDURAL INTERFACE
   is_long_at_least
         my $rules = {
             checks => [
-                zip_code => is_is_long_at_least( 5, 'Bad zip code' )
+                zip_code => is_long_at_least( 5, 'Bad zip code' )
             ]
         };
 
@@ -395,7 +395,7 @@ PROCEDURAL INTERFACE
   is_long_at_most
         my $rules = {
             checks => [
-                city_name => is_is_long_at_most( 40, 'City name is too long' )
+                city_name => is_long_at_most( 40, 'City name is too long' )
             ]
         };
 
@@ -429,13 +429,10 @@ OBJECT INTERFACE
   data
     Returns a hash reference to all filtered fields. If called with a
     parameter, it will return the value of that field or croak if there is
-    no such field.
+    no such field defined in the fields array.
 
         my $all_fields = $result->data;
         my $email      = $result->data('email');
-
-        # This will die for there is no 'foo'
-        my $foo = $result->data('foo');
 
   error
     Returns a hash reference to all error messages. If called with a

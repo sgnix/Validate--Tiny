@@ -35,11 +35,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -592,7 +592,7 @@ sub is_equal {
 
     my $rules = {
         checks => [
-            username => is_is_long_between( 6, 25, 'Bad username' )
+            username => is_long_between( 6, 25, 'Bad username' )
         ]
     };
 
@@ -616,7 +616,7 @@ sub is_long_between {
 
     my $rules = {
         checks => [
-            zip_code => is_is_long_at_least( 5, 'Bad zip code' )
+            zip_code => is_long_at_least( 5, 'Bad zip code' )
         ]
     };
 
@@ -638,7 +638,7 @@ sub is_long_at_least {
 
     my $rules = {
         checks => [
-            city_name => is_is_long_at_most( 40, 'City name is too long' )
+            city_name => is_long_at_most( 40, 'City name is too long' )
         ]
     };
 

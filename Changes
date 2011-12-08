@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+0.10    2011-12-08
+        Typos in POD fixed.
+
 0.09    2011-10-07
         Update Test::More dependency to 0.94 (needed for subtest)
         Remove dependency from List::MoreUtils
