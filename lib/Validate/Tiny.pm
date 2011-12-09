@@ -35,11 +35,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.10
+Version 0.20
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.20';
 
 =head1 SYNOPSIS
 
@@ -701,6 +701,40 @@ field.
     my $errors = $result->error;
     my $email = $result->error('email');
 
+=head2 error_string
+
+Returns a string with all errors. Sometimes you may want to display all errors
+together in a string. This function makes that easy.
+
+    my $str = $result->error_string;    # return a string with all errors
+    my $str = $result->error_string(
+        template  => '%s is %s',
+        separator => '<br>',
+        names     => {
+            f_name => 'First name',
+            l_name => 'Last name'
+        }
+    );
+
+    # An example output for the above would be:
+    # "First name is required<br>Last name is required"
+
+C<error_string> takes three optional parameters: C<template>, C<separator> and
+C<names>.
+
+C<template> is a C<sprintf> string with two C<%s> in it: one of the field name
+and one for the error message. For example if your template is C<'(%s): %s'>,
+the error will look like this C<(field_name): Error message>. The default C<separator>
+value is C<[%s] %s>.
+
+C<separator> is a character or a string which to be used to join all error
+messages. The default value is C<";">.
+
+C<names> is a HASH reference, which contains C<field_name => "Field description">
+values, so instead of C<field_name> your users will see a meaningful description.
+If a field is not defined then the field name will be used. The default value is
+an empty hash.
+
 =head2 to_hash
 
 Return a result hash, much like using the procedural interface. See the output
@@ -718,6 +752,25 @@ sub new {
         rules  => $rules,
         result => validate( $input, $rules )
     }, $class;
+}
+
+sub error_string {
+    my ( $self, %args ) = @_;
+    return "" if $self->success;
+
+    $args{separator} //= ";";
+    $args{names}     //= {};
+    $args{template}  //= '[%s] %s';
+
+    if ( ref($args{names}) ne 'HASH' ) {
+        croak("names must be a reference to a HASH");
+    }
+
+    my @errors = map {
+        sprintf( $args{template}, ($args{names}->{$_} // $_), $self->error($_) )
+    } keys %{$self->error};
+
+    return join( $args{separator}, @errors );
 }
 
 sub AUTOLOAD {
@@ -752,7 +805,7 @@ sub DESTROY {}
 
 =head1 SEE ALSO
 
-L<Data::FormValidator>
+L<Data::FormValidator>, L<Validation::Class>
 
 =head1 AUTHOR
 

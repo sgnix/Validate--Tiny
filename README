@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.10
+    Version 0.20
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -442,12 +442,45 @@ OBJECT INTERFACE
         my $errors = $result->error;
         my $email = $result->error('email');
 
+  error_string
+    Returns a string with all errors. Sometimes you may want to display all
+    errors together in a string. This function makes that easy.
+
+        my $str = $result->error_string;    # return a string with all errors
+        my $str = $result->error_string(
+            template  => '%s is %s',
+            separator => '<br>',
+            names     => {
+                f_name => 'First name',
+                l_name => 'Last name'
+            }
+        );
+
+        # An example output for the above would be:
+        # "First name is required<br>Last name is required"
+
+    "error_string" takes three optional parameters: "template", "separator"
+    and "names".
+
+    "template" is a "sprintf" string with two %s in it: one of the field
+    name and one for the error message. For example if your template is
+    '(%s): %s', the error will look like this "(field_name): Error message".
+    The default "separator" value is "[%s] %s".
+
+    "separator" is a character or a string which to be used to join all
+    error messages. The default value is ";".
+
+    "names" is a HASH reference, which contains "field_name =" "Field
+    description"> values, so instead of "field_name" your users will see a
+    meaningful description. If a field is not defined then the field name
+    will be used. The default value is an empty hash.
+
   to_hash
     Return a result hash, much like using the procedural interface. See the
     output of "validate" for more information.
 
 SEE ALSO
-    Data::FormValidator
+    Data::FormValidator, Validation::Class
 
 AUTHOR
     minimalist, "<minimalist at lavabit.com>"

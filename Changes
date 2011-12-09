@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+0.20    2011-12-08
+        Add method error_string
+
 0.10    2011-12-08
         Typos in POD fixed.
 
