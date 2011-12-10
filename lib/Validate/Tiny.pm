@@ -35,11 +35,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.20
+Version 0.21
 
 =cut
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 =head1 SYNOPSIS
 
@@ -719,21 +719,51 @@ together in a string. This function makes that easy.
     # An example output for the above would be:
     # "First name is required<br>Last name is required"
 
-C<error_string> takes three optional parameters: C<template>, C<separator> and
-C<names>.
+C<error_string> takes the following optional parameters:
 
-C<template> is a C<sprintf> string with two C<%s> in it: one of the field name
-and one for the error message. For example if your template is C<'(%s): %s'>,
-the error will look like this C<(field_name): Error message>. The default C<separator>
-value is C<[%s] %s>.
+=head3 template
 
-C<separator> is a character or a string which to be used to join all error
-messages. The default value is C<";">.
+A string for the C<sprintf> function. It has to have two %s's in it:
+one for the field name and one for the error message.
 
-C<names> is a HASH reference, which contains C<field_name => "Field description">
-values, so instead of C<field_name> your users will see a meaningful description.
-If a field is not defined then the field name will be used. The default value is
-an empty hash.
+    my $str = $result->error_string(
+        template => '(%s)%s'
+    );
+
+    # Result: "(field_name):Error message"
+
+The default value is C<[%s] %s>.
+
+=head3 separator
+
+A character or a string which will be used to join all error messages.
+The default value is C<";">.
+
+=head3 names
+
+A HASH reference, which contains field_name => "Field description"
+values, so instead of C<field_name> your users will see a meaningful description
+for the field.
+
+    my $str = $result->error_string(
+        template => '%s %s',
+        names => {
+            pass  => 'Chosen password',
+            pass2 => 'Password verification'
+        }
+    );
+
+    # Result: "Password verification does not match."
+
+If a field description is not defined then the field name will be used.
+The default value for C<names> is an empty hash.
+
+=head3 single
+
+If this is non-zero, the result will contain the error message only for B<one> of the fields.
+This can be useful when you want to display a single error at a time. The value of
+C<separator> in this case is disregarded.
+Default value C<0>.
 
 =head2 to_hash
 
@@ -761,6 +791,7 @@ sub error_string {
     $args{separator} //= ";";
     $args{names}     //= {};
     $args{template}  //= '[%s] %s';
+    $args{single}    //= 0;
 
     if ( ref($args{names}) ne 'HASH' ) {
         croak("names must be a reference to a HASH");
@@ -770,7 +801,9 @@ sub error_string {
         sprintf( $args{template}, ($args{names}->{$_} // $_), $self->error($_) )
     } keys %{$self->error};
 
-    return join( $args{separator}, @errors );
+    return $args{single}
+        ? shift @errors
+        : join( $args{separator}, @errors );
 }
 
 sub AUTOLOAD {

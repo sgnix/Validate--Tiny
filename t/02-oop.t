@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 31;
 use Validate::Tiny;
 
 my $rules = {
@@ -50,6 +50,12 @@ $result = Validate::Tiny->new( { a => 11, b => 11 }, $rules );
 my $str = $result->error_string;
 like $str, qr/\[a\] ErrorA/;
 like $str, qr/\[b\] ErrorB/;
+
+$str = $result->error_string(
+    single => 1
+);
+
+ok( $str eq '[a] ErrorA' || $str eq '[b] ErrorB' );
 
 $str = $result->error_string(
     separator => 'bangladesh'

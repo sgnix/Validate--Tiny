@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+0.21    2011-12-09
+        Add "single" parameter to method "error_string".
+        Fix typos and enhance POD.
+
 0.20    2011-12-08
         Add method error_string
 

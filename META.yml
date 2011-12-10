@@ -25,4 +25,4 @@ requires:
 resources:
   repository: git://github.com/naturalist/Validate--Tiny.git
   bugtracker: https://github.com/naturalist/Validate--Tiny/issues
-version: 0.20
+version: 0.21
