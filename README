@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.20
+    Version 0.21
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -459,21 +459,47 @@ OBJECT INTERFACE
         # An example output for the above would be:
         # "First name is required<br>Last name is required"
 
-    "error_string" takes three optional parameters: "template", "separator"
-    and "names".
+    "error_string" takes the following optional parameters:
 
-    "template" is a "sprintf" string with two %s in it: one of the field
-    name and one for the error message. For example if your template is
-    '(%s): %s', the error will look like this "(field_name): Error message".
-    The default "separator" value is "[%s] %s".
+   template
+    A string for the "sprintf" function. It has to have two %s's in it: one
+    for the field name and one for the error message.
 
-    "separator" is a character or a string which to be used to join all
-    error messages. The default value is ";".
+        my $str = $result->error_string(
+            template => '(%s)%s'
+        );
 
-    "names" is a HASH reference, which contains "field_name =" "Field
-    description"> values, so instead of "field_name" your users will see a
-    meaningful description. If a field is not defined then the field name
-    will be used. The default value is an empty hash.
+        # Result: "(field_name):Error message"
+
+    The default value is "[%s] %s".
+
+   separator
+    A character or a string which will be used to join all error messages.
+    The default value is ";".
+
+   names
+    A HASH reference, which contains field_name => "Field description"
+    values, so instead of "field_name" your users will see a meaningful
+    description for the field.
+
+        my $str = $result->error_string(
+            template => '%s %s',
+            names => {
+                pass  => 'Chosen password',
+                pass2 => 'Password verification'
+            }
+        );
+
+        # Result: "Password verification does not match."
+
+    If a field description is not defined then the field name will be used.
+    The default value for "names" is an empty hash.
+
+   single
+    If this is non-zero, the result will contain the error message only for
+    one of the fields. This can be useful when you want to display a single
+    error at a time. The value of "separator" in this case is disregarded.
+    Default value 0.
 
   to_hash
     Return a result hash, much like using the procedural interface. See the
