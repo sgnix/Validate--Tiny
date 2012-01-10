@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.21
+    Version 0.30
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -313,7 +313,7 @@ PROCEDURAL INTERFACE
 
     If "success" is 1 all of the filtered input will be in %data, otherwise
     the error messages will be stored in %error. If "success" is 0, %data
-    may or may not contain values, but its use not recommended.
+    may or may not contain values, but its use is not recommended.
 
   filter
         filter( $name1, $name2, ... );
@@ -402,6 +402,58 @@ PROCEDURAL INTERFACE
     Checks if the length of the value is <= $length. Optionally you can
     provide a custom error message. The default is *Must be at the most %i
     symbols*.
+
+  is_a
+        use DateTime::Format::Natural;
+        use Try::Tiny;
+
+        my $parser = DateTime::Format::Natural->new;
+
+        my $rules = {
+            fields  => ['date'],
+
+            filters => [
+                date => sub {
+                    try {
+                        $parser->parse_datetime( $_[0] );
+                    }
+                    catch {
+                        $_[0]
+                    }
+                }
+            ],
+
+            checks => [
+                date => is_a("DateTime", "Ivalid date")
+            ]
+        };
+
+    Checks if the value is an instance of a class. This can be particularly
+    useful, when you need to parse dates or other user input that needs to
+    get converted to an object. Since the filters get executed before
+    checks, you can use them to instantiate the data, then use "is_a" to
+    check if you got a successful object.
+
+  is_like
+        my $rules = {
+            checks => [
+                username => is_like( qr/^[a-z0-9_]{6,20}$/, "Bad username" )
+            ]
+        };
+
+    Checks if the value matches a regular expression. Optionally you can
+    provide a custom error message.
+
+  is_in
+        my @cities = qw/Alchevsk Kiev Odessa/;
+        my $rules = {
+            checks => [
+                city => is_in( \@cities, "We only deliver to " . join(',', @cities))
+            ]
+        };
+
+    Checks if the value matches a set of values. Optionally you can provide
+    a custom error message.
 
 OBJECT INTERFACE
   new
