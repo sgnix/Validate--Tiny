@@ -61,7 +61,7 @@ subtest 'Filters' => sub {
 };
 
 subtest 'Checks' => sub {
-    plan tests => 13;
+    plan tests => 21;
     $rules = {
         fields => [qw/a b/],
         checks => [ [qw/a b/] => is_required() ]
@@ -203,10 +203,10 @@ subtest 'Checks' => sub {
     );
 
     ###
-    
+
     $result = validate( { a => 'so' }, $rules );
     is_deeply(
-        $result, 
+        $result,
         {
             success => 0,
             data => { a => 'so' },
@@ -220,7 +220,7 @@ subtest 'Checks' => sub {
     $rules = {
             fields => ['a'],
             checks => [
-                a => is_required(), 
+                a => is_required(),
                 a => is_long_at_least(5, 'Error')
             ]
     };
@@ -239,7 +239,7 @@ subtest 'Checks' => sub {
 
     $result = validate( { a => 'so' }, $rules );
     is_deeply(
-        $result, 
+        $result,
         {
             success => 0,
             data => { a => 'so' },
@@ -247,6 +247,49 @@ subtest 'Checks' => sub {
         },
         'check chaining 4'
     );
+
+    ###
+
+    {
+
+        use FindBin;
+        use lib "$FindBin::Bin/lib";
+        use Class;
+
+        $rules = {
+            fields  => ['a'],
+            filters => [ a => sub { $_[0] ? Class->new  : 1 } ],
+            checks  => [ a => is_a( "Class", "NO" ) ]
+        };
+
+        $result = validate( { a => 1 }, $rules );
+        ok $result->{success};
+        isa_ok( $result->{data}->{a}, "Class" );
+
+        $result = validate( { a => 0 }, $rules );
+        ok !$result->{success};
+        is $result->{error}->{a}, "NO";
+
+    }
+
+    ###
+
+    $rules = {
+        fields => ['a'],
+        checks => [ a => is_like(qr/^\d+$/) ]
+    };
+
+    ok validate( { a => '123' }, $rules )->{success};
+    ok !validate( { a => '123f' }, $rules )->{success};
+
+    ###
+
+    $rules = {
+        fields => ['a'],
+        checks => [ a => is_in([qw/z x y/]) ]
+    };
+    ok validate( { a => 'z'}, $rules )->{success};
+    ok !validate( { a => 'd' }, $rules )->{success};
 
 };
 

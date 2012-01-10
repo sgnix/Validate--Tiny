@@ -1,6 +1,5 @@
 package Validate::Tiny;
 
-use 5.010;
 use strict;
 use warnings;
 use utf8;
@@ -15,15 +14,18 @@ my @EXPORT_OK = qw/
     is_long_between
     is_long_at_least
     is_long_at_most
+    is_a
+    is_like
+    is_in
 /;
 
 sub import {
     my $class = shift;
     my $caller = caller;
-    my @rest = ':all' ~~ \@_ ? @EXPORT_OK : @_;
+    my @rest = _match(':all', \@_) ? @EXPORT_OK : @_;
     no strict 'refs';
     for my $sub ( @rest ) {
-        if ( $sub ~~ \@EXPORT_OK ) {
+        if ( _match($sub, \@EXPORT_OK) ) {
             *{"${caller}::$sub"} = eval("\\\&$sub");
         }
     }
@@ -35,11 +37,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.21
+Version 0.30
 
 =cut
 
-our $VERSION = '0.21';
+our $VERSION = '0.30';
 
 =head1 SYNOPSIS
 
@@ -376,7 +378,7 @@ C<validate> returns a hash ref with three elements:
 
 If C<success> is 1 all of the filtered input will be in C<%data>,
 otherwise the error messages will be stored in C<%error>. If C<success>
-is 0, C<%data> may or may not contain values, but its use not
+is 0, C<%data> may or may not contain values, but its use is not
 recommended.
 
 =cut
@@ -399,7 +401,7 @@ sub validate {
     }
 
     for ( keys %$rules ) {
-        unless ( $_ ~~ [qw/fields filters checks/] ) {
+        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' ) {
             die "Unknown key $_";
         }
     }
@@ -460,7 +462,7 @@ sub _process {
     my $value = $param->{$key};
     my $iterator = natatime(2, @$pairs);
     while ( my ( $match, $code ) = $iterator->() ) {
-        if ( $key ~~ $match ) {
+        if ( _match($key, $match) ) {
             my $temp = _run_code( $code, $value, $check ? $param : undef );
             if ( $check ) {
                 return $temp if $temp
@@ -478,6 +480,22 @@ sub natatime {
     my @list = @_;
     return sub {
         return splice @list, 0, $n;
+    }
+}
+
+sub _match {
+    my ( $a, $b ) = @_;
+    if ( !ref($b) ) {
+        return $a eq $b;
+    }
+    elsif ( ref($b) eq 'ARRAY' ) {
+        return grep { $a eq $_ } @$b;
+    }
+    elsif ( ref($b) eq 'Regexp' ) {
+        return $a =~ $b;
+    }
+    else {
+        return 0;
     }
 }
 
@@ -657,6 +675,95 @@ sub is_long_at_most {
     };
 }
 
+=head2 is_a
+
+    use DateTime::Format::Natural;
+    use Try::Tiny;
+
+    my $parser = DateTime::Format::Natural->new;
+
+    my $rules = {
+        fields  => ['date'],
+
+        filters => [
+            date => sub {
+                try {
+                    $parser->parse_datetime( $_[0] );
+                }
+                catch {
+                    $_[0]
+                }
+            }
+        ],
+
+        checks => [
+            date => is_a("DateTime", "Ivalid date")
+        ]
+    };
+
+Checks if the value is an instance of a class. This can be particularly useful,
+when you need to parse dates or other user input that needs to get converted to
+an object. Since the filters get executed before checks, you can use them to
+instantiate the data, then use C<is_a> to check if you got a successful object.
+
+=cut
+
+sub is_a {
+    my ( $class, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    return sub {
+        defined $_[0] || return undef;
+        ref($_[0]) eq $class ? undef : $err_msg;
+    }
+}
+
+=head2 is_like
+
+    my $rules = {
+        checks => [
+            username => is_like( qr/^[a-z0-9_]{6,20}$/, "Bad username" )
+        ]
+    };
+
+Checks if the value matches a regular expression. Optionally you can provide a
+custom error message.
+
+=cut
+
+sub is_like {
+    my ( $regexp, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    croak 'Regexp expected' unless ref($regexp) eq 'Regexp';
+    return sub {
+        defined $_[0] || return undef;
+        $_[0] =~ $regexp ? undef : $err_msg;
+      }
+}
+
+=head2 is_in
+
+    my @cities = qw/Alchevsk Kiev Odessa/;
+    my $rules = {
+        checks => [
+            city => is_in( \@cities, "We only deliver to " . join(',', @cities))
+        ]
+    };
+
+Checks if the value matches a set of values. Optionally you can provide a
+custom error message.
+
+=cut
+
+sub is_in {
+    my ( $arrayref, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    croak 'ArrayRef expected' unless ref($arrayref) eq 'ARRAY';
+    return sub {
+        defined $_[0] || return undef;
+        _match( $_[0], $arrayref ) ? undef : $err_msg;
+      }
+}
+
 =head1 OBJECT INTERFACE
 
 =head2 new
@@ -788,17 +895,16 @@ sub error_string {
     my ( $self, %args ) = @_;
     return "" if $self->success;
 
-    $args{separator} //= ";";
-    $args{names}     //= {};
-    $args{template}  //= '[%s] %s';
-    $args{single}    //= 0;
+    $args{separator} = defined $args{separator} ? $args{separator} : ';';
+    $args{names} = defined $args{names} ? $args{names} : {};
+    $args{template} = defined $args{template} ? $args{template} : '[%s] %s';
 
     if ( ref($args{names}) ne 'HASH' ) {
         croak("names must be a reference to a HASH");
     }
 
     my @errors = map {
-        sprintf( $args{template}, ($args{names}->{$_} // $_), $self->error($_) )
+        sprintf( $args{template}, ($args{names}->{$_} || $_), $self->error($_) )
     } keys %{$self->error};
 
     return $args{single}
@@ -810,12 +916,12 @@ sub AUTOLOAD {
     my $self = shift;
     our $AUTOLOAD;
     my $sub = $AUTOLOAD =~ /::(\w+)$/ ? $1 : undef;
-    if ( $sub ~~ [qw/params rules/] ) {
+    if ( $sub eq 'params' || $sub eq 'rules' ) {
         return $self->{$sub};
     }
-    elsif ( $sub ~~ [qw/data error/] ) {
+    elsif ( $sub eq 'data' || $sub eq 'error' ) {
         if ( my $field = shift ) {
-            return $field ~~ $self->{rules}->{fields}
+            return _match($field, $self->{rules}->{fields})
                 ? $self->{result}->{$sub}->{ $field }
                 : croak("Undefined field $sub($field)");
         }

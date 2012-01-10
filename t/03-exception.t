@@ -4,7 +4,7 @@ use Test::More;
 use Validate::Tiny ':all';
 
 if ( eval("use Test::Exception; 1;") ) {
-    plan tests => 14;
+    plan tests => 16;
 }
 else {
     plan skip_all => "No Test::Exception installed";
@@ -56,4 +56,21 @@ my $result = Validate::Tiny->new( $input, $rules );
 dies_ok(sub{ $result->something }, "Wrong accessor");
 dies_ok(sub{ $result->data('b') }, "Non existing field");
 
+###
+
+# is_like expects a regexp
+dies_ok(
+    sub {
+        $rules = { fields => ['a'], checks => [ a => is_like('b') ] };
+        validate( { a => 1 }, $rules );
+    }
+);
+
+# is_in expects arrayref
+dies_ok(
+    sub {
+        $rules = { fields => ['a'], checks => [ a => is_in('b') ] };
+        validate( { a => 1 }, $rules );
+    }
+);
 

@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+0.30    2011-12-10
+        Lower minimum required Perl version to 5.8
+        add is_a, is_like, is_in constraint closures
+
 0.21    2011-12-09
         Add "single" parameter to method "error_string".
         Fix typos and enhance POD.

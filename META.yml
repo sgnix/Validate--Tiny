@@ -19,10 +19,10 @@ no_index:
     - t
     - inc
 requires:
-  perl: 5.010
+  perl: 5.008
   Carp: 0
   Test::More: 0.94
 resources:
   repository: git://github.com/naturalist/Validate--Tiny.git
   bugtracker: https://github.com/naturalist/Validate--Tiny/issues
-version: 0.21
+version: 0.30
