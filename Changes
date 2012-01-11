@@ -1,6 +1,9 @@
 Revision history for Validate-Tiny
 
-0.30    2011-12-10
+0.31    2012-01-11
+        Add credits in POD
+
+0.30    2011-01-10
         Lower minimum required Perl version to 5.8
         add is_a, is_like, is_in constraint closures
 
