@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+0.32    2012-01-12
+        Ge back to using List::MoreUtils and Exporter
+        (under pressure from reddit users)
+
 0.31    2012-01-11
         Add credits in POD
 

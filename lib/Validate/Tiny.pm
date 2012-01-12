@@ -4,9 +4,12 @@ use strict;
 use warnings;
 use utf8;
 
-use Carp;
+use parent 'Exporter';
 
-my @EXPORT_OK = qw/
+use Carp;
+use List::MoreUtils 'natatime';
+
+our @EXPORT_OK = qw/
     validate
     filter
     is_required
@@ -19,17 +22,7 @@ my @EXPORT_OK = qw/
     is_in
 /;
 
-sub import {
-    my $class = shift;
-    my $caller = caller;
-    my @rest = _match(':all', \@_) ? @EXPORT_OK : @_;
-    no strict 'refs';
-    for my $sub ( @rest ) {
-        if ( _match($sub, \@EXPORT_OK) ) {
-            *{"${caller}::$sub"} = eval("\\\&$sub");
-        }
-    }
-}
+our %EXPORT_TAGS = ( all => \@EXPORT_OK );
 
 =head1 NAME
 
@@ -37,11 +30,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.31
+Version 0.32
 
 =cut
 
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 =head1 SYNOPSIS
 
@@ -473,15 +466,6 @@ sub _process {
         }
     }
     return $check ? undef : $value;
-}
-
-# From ADAMK's List::MoreUtils
-sub natatime {
-    my $n    = shift;
-    my @list = @_;
-    return sub {
-        return splice @list, 0, $n;
-    }
 }
 
 sub _match {
@@ -950,10 +934,6 @@ L<Data::FormValidator>, L<Validation::Class>
 =head1 AUTHOR
 
 minimalist, C<< <minimalist at lavabit.com> >>
-
-=head1 CREDITS
-
-C<natatime> borrowed from Adam Kennedy's L<List::MoreUtils>.
 
 =head1 BUGS
 

@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.31
+    Version 0.32
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -562,9 +562,6 @@ SEE ALSO
 
 AUTHOR
     minimalist, "<minimalist at lavabit.com>"
-
-CREDITS
-    "natatime" borrowed from Adam Kennedy's List::MoreUtils.
 
 BUGS
     Bug reports and patches are welcome. Reports which include a failing
