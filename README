@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.32
+    Version 0.35
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -210,7 +210,7 @@ PROCEDURAL INTERFACE
         sub is_good_password {
             my ( $value, $params ) = @_;
 
-            if ( !defined $value ) {
+            if ( !defined $value or $value eq '' ) {
                 return undef;
             }
 
@@ -247,6 +247,8 @@ PROCEDURAL INTERFACE
     Its job is to determine if the password is good. Consider the following
     example:
 
+        # Password is required and it must pass the check for good password
+        #
         my $rules = {
             fields => [qw/username password/],
             checks => [
@@ -256,18 +258,22 @@ PROCEDURAL INTERFACE
 
     and this one too:
 
+        # Password is not required, but if it's provided then
+        # it must pass the is_good_password constraint.
+        #
         my $rules = {
             fields => [qw/username password/],
             checks => [
-                qr/.+/   => is_required(),
+                username => is_required(),
                 password => \&is_good_password
             ]
         };
 
-    The above examples show how we make sure that "password" is available
-    before we check if it is a good password. Of course you can check if
-    "password" is defined inside "is_good_password", but it would be
-    redundant.
+    The above examples show how we make sure that "password" is defined and
+    not empty before we check if it is a good password. Of course we can
+    check if "password" is defined inside "is_good_password", but it would
+    be redundant. Also, this approach will fail if "password" is not
+    required, but must pass the rules for a good password if provided.
 
    Chaining
     The above example also shows that chaining check subroutines is

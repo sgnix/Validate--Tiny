@@ -30,11 +30,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.32
+Version 0.35
 
 =cut
 
-our $VERSION = '0.32';
+our $VERSION = '0.35';
 
 =head1 SYNOPSIS
 
@@ -263,7 +263,7 @@ B<Example:>
     sub is_good_password {
         my ( $value, $params ) = @_;
 
-        if ( !defined $value ) {
+        if ( !defined $value or $value eq '' ) {
             return undef;
         }
 
@@ -300,6 +300,8 @@ is not the job of C<is_good_password> to check if C<password> is required.
 Its job is to determine if the password is good. Consider the following
 example:
 
+    # Password is required and it must pass the check for good password
+    #
     my $rules = {
         fields => [qw/username password/],
         checks => [
@@ -309,18 +311,22 @@ example:
 
 and this one too:
 
+    # Password is not required, but if it's provided then
+    # it must pass the is_good_password constraint.
+    #
     my $rules = {
         fields => [qw/username password/],
         checks => [
-            qr/.+/   => is_required(),
+            username => is_required(),
             password => \&is_good_password
         ]
     };
 
-The above examples show how we make sure that C<password> is available
-before we check if it is a good password. Of course you can check if
-C<password> is defined inside C<is_good_password>, but it would be
-redundant.
+The above examples show how we make sure that C<password> is defined
+and not empty before we check if it is a good password.
+Of course we can check if C<password> is defined inside C<is_good_password>,
+but it would be redundant. Also, this approach will fail if C<password> is
+not required, but must pass the rules for a good password if provided.
 
 =head4 Chaining
 
@@ -583,7 +589,7 @@ sub is_equal {
     my ( $other, $err_msg ) = @_;
     $err_msg ||= 'Invalid value';
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         return defined $_[1]->{$other} && $_[0] eq $_[1]->{$other}
           ? undef
           : $err_msg;
@@ -608,7 +614,7 @@ sub is_long_between {
     my ( $min, $max, $err_msg ) = @_;
     $err_msg ||= "Must be between $min and $max symbols";
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         length( $_[0] ) >= $min && length( $_[0] ) <= $max
           ? undef
           : $err_msg;
@@ -632,7 +638,7 @@ sub is_long_at_least {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at least $length symbols";
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         length( $_[0] ) >= $length ? undef : $err_msg;
     };
 }
@@ -655,7 +661,7 @@ sub is_long_at_most {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at the most $length symbols";
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         length( $_[0] ) <= $length ? undef : $err_msg;
     };
 }
@@ -697,7 +703,7 @@ sub is_a {
     my ( $class, $err_msg ) = @_;
     $err_msg ||= "Invalid value";
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         ref($_[0]) eq $class ? undef : $err_msg;
     }
 }
@@ -720,7 +726,7 @@ sub is_like {
     $err_msg ||= "Invalid value";
     croak 'Regexp expected' unless ref($regexp) eq 'Regexp';
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         $_[0] =~ $regexp ? undef : $err_msg;
       }
 }
@@ -744,7 +750,7 @@ sub is_in {
     $err_msg ||= "Invalid value";
     croak 'ArrayRef expected' unless ref($arrayref) eq 'ARRAY';
     return sub {
-        defined $_[0] || return undef;
+        return undef if !defined($_[0]) || $_[0] eq '';
         _match( $_[0], $arrayref ) ? undef : $err_msg;
       }
 }

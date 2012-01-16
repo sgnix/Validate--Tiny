@@ -1,5 +1,10 @@
 Revision history for Validate-Tiny
 
+0.35    2012-01-16
+        Fix stock closure logic when handling not-required fields.
+        Test not only if the value is defined, but also if it is
+        an empty value.
+
 0.32    2012-01-12
         Ge back to using List::MoreUtils and Exporter
         (under pressure from reddit users)
