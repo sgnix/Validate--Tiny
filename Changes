@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+0.37    2012-01-20
+        Add is_required_if closure
+
 0.35    2012-01-16
         Fix stock closure logic when handling not-required fields.
         Test not only if the value is defined, but also if it is

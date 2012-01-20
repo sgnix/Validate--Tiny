@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.35
+    Version 0.37
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -364,6 +364,42 @@ PROCEDURAL INTERFACE
     "is_required" provides a shortcut to an anonymous subroutine that checks
     if the matched field is defined and it is not an empty string.
     Optionally, you can provide a custom error message to be returned.
+
+  is_required_if
+        is_required_if( $condition, $err_msg );
+
+    Require a field conditionally. The condition can be either a scalar or a
+    code reference that returns true/false value. If the condition is a code
+    reference, it will be passed the $params hash with all filtered fields.
+
+    Example:
+
+        my $rules = {
+            fields => [qw/country state/],
+            checks => [
+                country => is_required(),
+                state   => is_required_if(
+                    sub {
+                        my $params = shift;
+                        return $params->{country} eq 'USA';
+                    },
+                    "Must select a state if you're in the USA"
+                )
+            ]
+        };
+
+    Second example:
+
+        our $month = 'October';
+        my $rules = {
+            fields => ['mustache'],
+            checks => [
+                mustache => is_required_if(
+                    $month eq 'October',
+                    "You must grow a mustache this month!"
+                )
+            ]
+        };
 
   is_equal
         is_equal( $other_field_name, $opt_error_msg )

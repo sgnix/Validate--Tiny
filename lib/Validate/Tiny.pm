@@ -13,6 +13,7 @@ our @EXPORT_OK = qw/
     validate
     filter
     is_required
+    is_required_if
     is_equal
     is_long_between
     is_long_at_least
@@ -30,11 +31,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.35
+Version 0.37
 
 =cut
 
-our $VERSION = '0.35';
+our $VERSION = '0.37';
 
 =head1 SYNOPSIS
 
@@ -568,6 +569,63 @@ you can provide a custom error message to be returned.
 sub is_required {
     my $err_msg = shift || 'Required';
     return sub { defined $_[0] && $_[0] ne '' ? undef : $err_msg  }
+}
+
+=head2 is_required_if
+
+    is_required_if( $condition, $err_msg );
+
+Require a field conditionally. The condition can be either a scalar or a
+code reference that returns true/false value. If the condition is a code
+reference, it will be passed the C<$params> hash with all filtered fields.
+
+Example:
+
+    my $rules = {
+        fields => [qw/country state/],
+        checks => [
+            country => is_required(),
+            state   => is_required_if(
+                sub {
+                    my $params = shift;
+                    return $params->{country} eq 'USA';
+                },
+                "Must select a state if you're in the USA"
+            )
+        ]
+    };
+
+Second example:
+
+    our $month = 'October';
+    my $rules = {
+        fields => ['mustache'],
+        checks => [
+            mustache => is_required_if(
+                $month eq 'October',
+                "You must grow a mustache this month!"
+            )
+        ]
+    };
+
+=cut
+
+sub is_required_if {
+    my ( $condition, $err_msg ) = @_;
+    $condition = 0 unless defined $condition;
+    $err_msg ||= 'Required';
+    if ( ref($condition) && ref($condition) ne 'CODE' ) {
+        croak "is_required_if condition must be CODE or SCALAR";
+    }
+    return sub {
+        my ( $value, $params ) = @_;
+        my $required =
+          ref($condition) eq 'CODE'
+          ? $condition->($params)
+          : $condition;
+        return unless $required;
+        return defined $value && $value ne '' ? undef : $err_msg;
+    };
 }
 
 =head2 is_equal

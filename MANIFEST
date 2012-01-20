@@ -6,6 +6,7 @@ README
 t/00-load.t
 t/01-0match.t
 t/01-1closures.t
+t/01-2is_required_if.t
 t/01-logic.t
 t/02-oop.t
 t/03-exception.t

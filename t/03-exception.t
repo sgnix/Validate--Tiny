@@ -4,7 +4,7 @@ use Test::More;
 use Validate::Tiny ':all';
 
 if ( eval("use Test::Exception; 1;") ) {
-    plan tests => 16;
+    plan tests => 17;
 }
 else {
     plan skip_all => "No Test::Exception installed";
@@ -72,5 +72,17 @@ dies_ok(
         $rules = { fields => ['a'], checks => [ a => is_in('b') ] };
         validate( { a => 1 }, $rules );
     }
+);
+
+# is_required_if expects CODE or SCALAR
+dies_ok(
+    sub {
+        $rules = {
+            fields => [qw/a b/],
+            checks => [ a => is_required_if( [] ) ]
+        };
+        validate( {a => ''}, $rules );
+    },
+    "is_required_if"
 );
 
