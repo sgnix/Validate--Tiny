@@ -4,12 +4,10 @@ use strict;
 use warnings;
 use utf8;
 
-use parent 'Exporter';
-
 use Carp;
 use List::MoreUtils 'natatime';
 
-our @EXPORT_OK = qw/
+my @EXPORT_OK = qw/
     validate
     filter
     is_required
@@ -23,7 +21,17 @@ our @EXPORT_OK = qw/
     is_in
 /;
 
-our %EXPORT_TAGS = ( all => \@EXPORT_OK );
+sub import {
+    my $class = shift;
+    my $caller = caller;
+    my @rest = _match(':all', \@_) ? @EXPORT_OK : @_;
+    no strict 'refs';
+    for my $sub ( @rest ) {
+        if ( _match($sub, \@EXPORT_OK) ) {
+            *{"${caller}::$sub"} = eval("\\\&$sub");
+        }
+    }
+}
 
 =head1 NAME
 
@@ -31,11 +39,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.37
+Version 0.38
 
 =cut
 
-our $VERSION = '0.37';
+our $VERSION = '0.38';
 
 =head1 SYNOPSIS
 

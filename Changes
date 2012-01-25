@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+0.38    2012-01-25
+        Added dependancy info in META
+
 0.37    2012-01-20
         Add is_required_if closure
 

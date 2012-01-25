@@ -21,7 +21,8 @@ no_index:
 requires:
   perl: 5.008
   Test::More: 0.94
+  List::MoreUtils: 0
 resources:
   repository: git://github.com/naturalist/Validate--Tiny.git
   bugtracker: https://github.com/naturalist/Validate--Tiny/issues
-version: 0.37
+version: 0.38

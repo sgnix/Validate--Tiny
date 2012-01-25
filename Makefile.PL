@@ -13,8 +13,9 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0.94
-    },
+        'Test::More'      => 0.94,
+        'List::MoreUtils' => 0
+      },
     MIN_PERL_VERSION    => '5.008',
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Validate-Tiny-*' },
