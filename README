@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.38
+    Version 0.98
 
 SYNOPSIS
     Filter and validate user input from forms, etc.

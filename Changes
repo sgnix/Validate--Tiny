@@ -1,5 +1,10 @@
 Revision history for Validate-Tiny
 
+0.98    2012-02-01
+        Fix whitespace glitch in filter 'strip'.
+        Move tests to different files.
+        Write more tests.
+
 0.38    2012-01-25
         Added dependancy info in META
 

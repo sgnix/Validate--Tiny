@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 31;
+use Test::More tests => 34;
 use Validate::Tiny;
 
 my $rules = {
@@ -12,6 +12,19 @@ my $rules = {
 };
 my $result = Validate::Tiny->new( { a=> 1 }, $rules );
 my $r2 = Validate::Tiny::validate( { a => 1 }, $rules );
+
+# Sanity
+{
+    local $@;
+    eval { $result->something };
+    ok $@, "wrong accessor";
+
+    eval { $result->data('something') };
+    ok $@, "wrong data field";
+
+    eval { $result->error('something') };
+    ok $@, "wrong error field";
+}
 
 ok( $result->success, 'success' );
 is( $result->data('a'), 1, 'functional access data' );

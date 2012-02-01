@@ -39,11 +39,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.38
+Version 0.98
 
 =cut
 
-our $VERSION = '0.38';
+our $VERSION = '0.98';
 
 =head1 SYNOPSIS
 
@@ -546,22 +546,22 @@ Upper case first letter
 
 sub filter {
     my $FILTERS = {
-        trim => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0] },
-        strip => sub { $_[0] =~ s/\s{2,}/ /g; $_[0] },
-        lc    => sub { lc $_[0] },
-        uc    => sub { uc $_[0] },
+        trim    => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0] },
+        strip   => sub { $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
+        lc      => sub { lc $_[0] },
+        uc      => sub { uc $_[0] },
         ucfirst => sub { ucfirst $_[0] },
     };
     my @result = ();
     for (@_) {
-        if ( ref $FILTERS->{$_} eq 'CODE' ) {
+        if ( exists $FILTERS->{$_} ) {
             push @result, $FILTERS->{$_};
         }
         else {
             die "Invalid filter: $_";
         }
     }
-    return \@result;
+    return @result == 1 ? $result[0] : \@result;
 }
 
 =head2 is_required
@@ -794,7 +794,7 @@ sub is_like {
     return sub {
         return undef if !defined($_[0]) || $_[0] eq '';
         $_[0] =~ $regexp ? undef : $err_msg;
-      }
+    };
 }
 
 =head2 is_in
@@ -1017,7 +1017,7 @@ https://github.com/naturalist/Validate--Tiny
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2011 minimalist.
+Copyright 2011-2012 minimalist.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms as perl itself.

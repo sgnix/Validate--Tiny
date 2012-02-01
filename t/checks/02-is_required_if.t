@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More;
+use Test::More tests => 10;
 use Validate::Tiny ':all';
 
 my $rules = {
@@ -36,5 +36,8 @@ is $r->{error}->{a}, 'foo';
 $r = validate( { a => 'k', b => 'z' }, $rules );
 ok $r->{success};
 
-
-done_testing;
+{
+    local $@;
+    eval { is_required_id([]) };
+    ok $@;
+}
