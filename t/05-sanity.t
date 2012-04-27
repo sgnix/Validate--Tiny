@@ -9,14 +9,17 @@ use Validate::Tiny ':all';
 eval { validate( {}, {} ) };
 ok $@, "Fields must be defined";
 
-eval { validate( {}, { fields => [] } ) };
-ok $@, "Fields can't be an empty array";
-
 eval { validate( {}, { fields => {} } ) };
 ok $@, "Fields must be an array";
 
 eval { validate( {}, { fields => [qw/a/], filters => [ 1, 2, 3 ] } ) };
 ok $@, "Fields must have even number of elements";
+
+{
+    my $res = validate( { a => 1, b => 2 }, { fields => [] } );
+    is_deeply $res, { success => 1, data => { a => 1, b => 2 }, error => {} },
+      "Empty fields takes all";
+}
 
 eval { validate( {}, { fields => [qw/a/], checks => [ 1, 2, 3 ] } ) };
 ok $@, "Checks must have even number of elements";

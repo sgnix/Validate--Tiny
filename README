@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.98
+    Version 0.981
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -144,9 +144,15 @@ PROCEDURAL INTERFACE
 
    fields
     An array containing the names of the fields that must be filtered,
-    checked and returned. All others will be disregarded.
+    checked and returned. All others will be disregarded. As of version
+    0.981 you can use an empty array for "fields", which will work on all
+    input fields.
 
         my @field_names = qw/username email password password2/;
+
+    or
+
+        my @field_names = ();   # Use all input fields
 
    filters
     An array containing name matches and filter subs. The array must have an
@@ -602,9 +608,6 @@ OBJECT INTERFACE
 SEE ALSO
     Data::FormValidator, Validation::Class
 
-AUTHOR
-    minimalist, "<minimalist at lavabit.com>"
-
 BUGS
     Bug reports and patches are welcome. Reports which include a failing
     Test::More style test are helpful and will receive priority.
@@ -612,9 +615,13 @@ BUGS
     You may also fork the module on Github:
     https://github.com/naturalist/Validate--Tiny
 
-LICENSE AND COPYRIGHT
-    Copyright 2011 minimalist.
+AUTHOR
+    minimalist (cpan: MINIMAL) - minimalist@lavabit.com
 
+CONTRIBUTORS
+    Viktor Tuskyi (cpan: KOORCHIK) - koorchik@cpan.org
+
+LICENCE
     This program is free software; you can redistribute it and/or modify it
     under the terms as perl itself.
 

@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+0.981   2012-04-26
+        Empty fields array will now process all input fields
+
 0.98    2012-02-01
         Fix whitespace glitch in filter 'strip'.
         Move tests to different files.

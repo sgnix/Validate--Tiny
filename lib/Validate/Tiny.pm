@@ -39,11 +39,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.98
+Version 0.981
 
 =cut
 
-our $VERSION = '0.98';
+our $VERSION = '0.981';
 
 =head1 SYNOPSIS
 
@@ -204,9 +204,15 @@ arrays: L</fields>, L</filters> and L</checks>.
 =head4 fields
 
 An array containing the names of the fields that must be filtered,
-checked and returned. All others will be disregarded.
+checked and returned. All others will be disregarded. As of version
+0.981 you can use an empty array for C<fields>, which will work on
+all input fields.
 
     my @field_names = qw/username email password password2/;
+
+or
+
+    my @field_names = ();   # Use all input fields
 
 =head4 filters
 
@@ -397,8 +403,8 @@ sub validate {
 
     # Sanity check
     #
-    if ( !defined $rules->{fields} || !@{ $rules->{fields} } ) {
-        die 'You must define some fields';
+    if ( !defined $rules->{fields} ) {
+        die 'You must define a fields array';
     }
 
     for (qw/filters checks/) {
@@ -415,7 +421,7 @@ sub validate {
     }
 
     my $param = {};
-    my @fields = @{ $rules->{fields} };
+    my @fields = @{ $rules->{fields} } ? @{ $rules->{fields} } : keys(%$input);
 
     # Add existing, filtered input to $param
     #
@@ -1003,10 +1009,6 @@ sub DESTROY {}
 
 L<Data::FormValidator>, L<Validation::Class>
 
-=head1 AUTHOR
-
-minimalist, C<< <minimalist at lavabit.com> >>
-
 =head1 BUGS
 
 Bug reports and patches are welcome. Reports which include a failing
@@ -1015,9 +1017,15 @@ Test::More style test are helpful and will receive priority.
 You may also fork the module on Github:
 https://github.com/naturalist/Validate--Tiny
 
-=head1 LICENSE AND COPYRIGHT
+=head1 AUTHOR
 
-Copyright 2011-2012 minimalist.
+minimalist (cpan: MINIMAL) - minimalist@lavabit.com
+
+=head1 CONTRIBUTORS
+
+Viktor Tuskyi (cpan: KOORCHIK) - koorchik@cpan.org
+
+=head1 LICENCE
 
 This program is free software; you can redistribute it and/or modify
 it under the terms as perl itself.
