@@ -39,11 +39,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.981
+Version 0.982
 
 =cut
 
-our $VERSION = '0.981';
+our $VERSION = '0.982';
 
 =head1 SYNOPSIS
 
@@ -984,9 +984,12 @@ sub AUTOLOAD {
     }
     elsif ( $sub eq 'data' || $sub eq 'error' ) {
         if ( my $field = shift ) {
-            return _match($field, $self->{rules}->{fields})
-                ? $self->{result}->{$sub}->{ $field }
-                : croak("Undefined field $sub($field)");
+            my $fields = $self->{rules}->{fields};
+            if ( scalar(@$fields) ) {
+                croak("Undefined field $sub($field)")
+                  unless _match( $field, $fields );
+            }
+            return $self->{result}->{$sub}->{ $field };
         }
         else {
             return {%{$self->{result}->{$sub}}};

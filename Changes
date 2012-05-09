@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+0.982   2012-05-08
+        Fix a bug with $vt->data croaking if no input fields are
+        specified.
+
 0.981   2012-04-26
         Empty fields array will now process all input fields
 

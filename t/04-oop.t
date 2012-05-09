@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 36;
 use Validate::Tiny;
 
 my $rules = {
@@ -24,6 +24,14 @@ my $r2 = Validate::Tiny::validate( { a => 1 }, $rules );
 
     eval { $result->error('something') };
     ok $@, "wrong error field";
+}
+
+# Empty fields list
+{
+    my $rules = { fields => [] };
+    my $result = Validate::Tiny->new( { a => 1 }, $rules );
+    is $result->data('a'), 1;
+    is $result->data('b'), undef;
 }
 
 ok( $result->success, 'success' );
