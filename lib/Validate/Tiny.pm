@@ -39,11 +39,11 @@ Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.982
+Version 0.983
 
 =cut
 
-our $VERSION = '0.982';
+our $VERSION = '0.983';
 
 =head1 SYNOPSIS
 
@@ -426,7 +426,7 @@ sub validate {
     # Add existing, filtered input to $param
     #
     for my $key ( @fields ) {
-        if ( defined $input->{$key} ) {
+        if ( exists $input->{$key} ) {
             $param->{$key} = _process( $rules->{filters}, $input, $key );
         }
     }
@@ -447,15 +447,15 @@ sub validate {
 }
 
 sub _run_code {
-    my ( $code, $value, $param ) = @_;
+    my ( $code, $value, $param, $key ) = @_;
     my $result = $value;
     if ( ref $code eq 'CODE' ) {
-        $result = $code->( $value, $param );
+        $result = $code->( $value, $param, $key );
         $value = $result unless defined $param;
     }
     elsif ( ref $code eq 'ARRAY' ) {
         for (@$code) {
-            $result = _run_code( $_, $value, $param );
+            $result = _run_code( $_, $value, $param, $key );
             if ( defined $param ) {
                 last if $result;
             }
@@ -477,7 +477,7 @@ sub _process {
     my $iterator = natatime(2, @$pairs);
     while ( my ( $match, $code ) = $iterator->() ) {
         if ( _match($key, $match) ) {
-            my $temp = _run_code( $code, $value, $check ? $param : undef );
+            my $temp = _run_code( $code, $value, $check ? ($param, $key) : undef );
             if ( $check ) {
                 return $temp if $temp
             }
@@ -1026,7 +1026,8 @@ minimalist (cpan: MINIMAL) - minimalist@lavabit.com
 
 =head1 CONTRIBUTORS
 
-Viktor Tuskyi (cpan: KOORCHIK) - koorchik@cpan.org
+Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
+Ivan Šimoník (cpan: SIMONIKI) - simoniki@cpan.org
 
 =head1 LICENCE
 

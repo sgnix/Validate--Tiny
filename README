@@ -2,7 +2,7 @@ NAME
     Validate::Tiny - Minimalistic data validation
 
 VERSION
-    Version 0.982
+    Version 0.983
 
 SYNOPSIS
     Filter and validate user input from forms, etc.
@@ -619,7 +619,8 @@ AUTHOR
     minimalist (cpan: MINIMAL) - minimalist@lavabit.com
 
 CONTRIBUTORS
-    Viktor Tuskyi (cpan: KOORCHIK) - koorchik@cpan.org
+    Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org Ivan ≈ imon√k
+    (cpan: SIMONIKI) - simoniki@cpan.org
 
 LICENCE
     This program is free software; you can redistribute it and/or modify it

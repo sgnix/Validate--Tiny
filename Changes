@@ -1,5 +1,11 @@
 Revision history for Validate-Tiny
 
+0.982   2012-07-09
+        Replaced "defined" with "exists" to allow filtering of keys
+        with undef value.
+        Added a third param to check subs $key, which contains the
+        name of the fields being checked.
+
 0.982   2012-05-08
         Fix a bug with $vt->data croaking if no input fields are
         specified.

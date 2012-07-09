@@ -6,6 +6,8 @@ README
 t/00-load.t
 t/01-filters.t
 t/02-checks.t
+t/021-undef.t
+t/022-key.t
 t/03-arrays.t
 t/04-oop.t
 t/05-sanity.t
