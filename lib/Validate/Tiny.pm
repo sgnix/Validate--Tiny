@@ -266,8 +266,19 @@ an even number of elements. Each I<odd> element is a field name match and
 each I<even> element is a reference to a check subroutine or a chain of
 check subroutines.
 
-A check subroutine takes two parameters - the value to be checked and a
-reference to the filtered input hash.
+A check subroutine takes three parameters - the value to be checked, a
+reference to the filtered input hash and a scalar with the name of the
+checked field.
+
+B<Example:>
+
+    checks => [
+        does_exist => sub {
+            my ( $value, $params, $keys ) = @_;
+            return "Key doesn't exist in input data"
+              unless exists( $params->{$key} );
+        }
+    ]
 
 A check subroutine must return undef if the check passes or a string with
 an error message if the check fails.
@@ -1022,12 +1033,12 @@ https://github.com/naturalist/Validate--Tiny
 
 =head1 AUTHOR
 
-minimalist (cpan: MINIMAL) - minimalist@lavabit.com
+    minimalist (cpan: MINIMAL) - minimalist@lavabit.com
 
 =head1 CONTRIBUTORS
 
-Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
-Ivan Šimoník (cpan: SIMONIKI) - simoniki@cpan.org
+    Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
+    Ivan Šimoník (cpan: SIMONIKI) - simoniki@cpan.org
 
 =head1 LICENCE
 
