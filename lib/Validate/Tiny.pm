@@ -1038,7 +1038,7 @@ https://github.com/naturalist/Validate--Tiny
 =head1 CONTRIBUTORS
 
     Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
-    Ivan Šimoník (cpan: SIMONIKI) - simoniki@cpan.org
+    Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
 
 =head1 LICENCE
 
