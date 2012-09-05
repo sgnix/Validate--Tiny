@@ -13,6 +13,7 @@ t/04-oop.t
 t/05-sanity.t
 t/06-spelling.t
 t/07-manifest.t
+t/090-extra-arg.t
 t/checks/01-is_required.t
 t/checks/02-is_required_if.t
 t/checks/03-is_equal.t

@@ -52,6 +52,10 @@ Filter and validate user input from forms, etc.
     use Validate::Tiny ':all';
 
     my $rules = {
+        
+        # The value of this key is passed to all validation callbacks.
+        # This key is optional and you can put anything you want inside
+        args => {}, #Could also be args => [] || args => 'somestring' || args => 123
 
         # List of fields to look for
         fields => [qw/name email pass pass2 gender/],
@@ -266,9 +270,9 @@ an even number of elements. Each I<odd> element is a field name match and
 each I<even> element is a reference to a check subroutine or a chain of
 check subroutines.
 
-A check subroutine takes three parameters - the value to be checked, a
-reference to the filtered input hash and a scalar with the name of the
-checked field.
+A check subroutine takes four parameters - the value to be checked, a
+reference to the filtered input hash, a scalar with the name of the
+checked field and the value of the $rules->{args} key.
 
 B<Example:>
 
@@ -426,7 +430,7 @@ sub validate {
     }
 
     for ( keys %$rules ) {
-        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' ) {
+        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' && $_ ne 'args' ) {
             die "Unknown key $_";
         }
     }
@@ -445,7 +449,7 @@ sub validate {
     # Process all checks for $param
     #
     for my $key ( @fields ) {
-        my $err = _process( $rules->{checks}, $param, $key, 1 );
+        my $err = _process( $rules->{checks}, $param, $key, 1, $rules->{args} );
         $error->{$key} ||= $err if $err;
     }
 
@@ -458,15 +462,15 @@ sub validate {
 }
 
 sub _run_code {
-    my ( $code, $value, $param, $key ) = @_;
+    my ( $code, $value, $param, $key, $args ) = @_;
     my $result = $value;
     if ( ref $code eq 'CODE' ) {
-        $result = $code->( $value, $param, $key );
+        $result = $code->( $value, $param, $key, $args );
         $value = $result unless defined $param;
     }
     elsif ( ref $code eq 'ARRAY' ) {
         for (@$code) {
-            $result = _run_code( $_, $value, $param, $key );
+            $result = _run_code( $_, $value, $param, $key, $args );
             if ( defined $param ) {
                 last if $result;
             }
@@ -483,12 +487,12 @@ sub _run_code {
 }
 
 sub _process {
-    my ( $pairs, $param, $key, $check ) = @_;
+    my ( $pairs, $param, $key, $check, $args ) = @_;
     my $value = $param->{$key};
     my $iterator = natatime(2, @$pairs);
     while ( my ( $match, $code ) = $iterator->() ) {
         if ( _match($key, $match) ) {
-            my $temp = _run_code( $code, $value, $check ? ($param, $key) : undef );
+            my $temp = _run_code( $code, $value, ( ($check) ? ($param, $key) : (undef,undef) ), $args );
             if ( $check ) {
                 return $temp if $temp
             }
