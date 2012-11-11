@@ -2,7 +2,6 @@ package Validate::Tiny;
 
 use strict;
 use warnings;
-use utf8;
 
 use Carp;
 use List::MoreUtils 'natatime';
@@ -33,17 +32,307 @@ sub import {
     }
 }
 
+our $VERSION = '0.984';
+
+sub validate {
+    my ( $input, $rules ) = @_;
+    my $error = {};
+
+    # Sanity check
+    #
+    if ( !defined $rules->{fields} ) {
+        die 'You must define a fields array';
+    }
+
+    for (qw/filters checks/) {
+        next unless exists $rules->{$_};
+        if ( ref( $rules->{$_} ) ne 'ARRAY' || @{ $rules->{$_} } % 2 ) {
+            die "$_ must be an array with an even number of elements";
+        }
+    }
+
+    for ( keys %$rules ) {
+        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' ) {
+            die "Unknown key $_";
+        }
+    }
+
+    my $param = {};
+    my @fields = @{ $rules->{fields} } ? @{ $rules->{fields} } : keys(%$input);
+
+    # Add existing, filtered input to $param
+    #
+    for my $key ( @fields ) {
+        if ( exists $input->{$key} ) {
+            $param->{$key} = _process( $rules->{filters}, $input, $key );
+        }
+    }
+
+    # Process all checks for $param
+    #
+    for my $key ( @fields ) {
+        my $err = _process( $rules->{checks}, $param, $key, 1 );
+        $error->{$key} ||= $err if $err;
+    }
+
+    return {
+        success => keys %$error ? 0 : 1,
+        error   => $error,
+        data    => $param
+    };
+
+}
+
+sub _run_code {
+    my ( $code, $value, $param, $key ) = @_;
+    my $result = $value;
+    if ( ref $code eq 'CODE' ) {
+        $result = $code->( $value, $param, $key );
+        $value = $result unless defined $param;
+    }
+    elsif ( ref $code eq 'ARRAY' ) {
+        for (@$code) {
+            $result = _run_code( $_, $value, $param, $key );
+            if ( defined $param ) {
+                last if $result;
+            }
+            else {
+                $value = $result;
+            }
+        }
+    }
+    else {
+        die 'Filters and checks must be either sub{} or []';
+    }
+
+    return $result;
+}
+
+sub _process {
+    my ( $pairs, $param, $key, $check ) = @_;
+    my $value = $param->{$key};
+    my $iterator = natatime(2, @$pairs);
+    while ( my ( $match, $code ) = $iterator->() ) {
+        if ( _match($key, $match) ) {
+            my $temp = _run_code( $code, $value, $check ? ($param, $key) : undef );
+            if ( $check ) {
+                return $temp if $temp
+            }
+            else {
+                $value = $temp;
+            }
+        }
+    }
+    return $check ? undef : $value;
+}
+
+sub _match {
+    my ( $a, $b ) = @_;
+    if ( !ref($b) ) {
+        return $a eq $b;
+    }
+    elsif ( ref($b) eq 'ARRAY' ) {
+        return grep { $a eq $_ } @$b;
+    }
+    elsif ( ref($b) eq 'Regexp' ) {
+        return $a =~ $b;
+    }
+    else {
+        return 0;
+    }
+}
+
+sub filter {
+    my $FILTERS = {
+        trim    => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0] },
+        strip   => sub { $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
+        lc      => sub { lc $_[0] },
+        uc      => sub { uc $_[0] },
+        ucfirst => sub { ucfirst $_[0] },
+    };
+    my @result = ();
+    for (@_) {
+        if ( exists $FILTERS->{$_} ) {
+            push @result, $FILTERS->{$_};
+        }
+        else {
+            die "Invalid filter: $_";
+        }
+    }
+    return @result == 1 ? $result[0] : \@result;
+}
+
+sub is_required {
+    my $err_msg = shift || 'Required';
+    return sub { defined $_[0] && $_[0] ne '' ? undef : $err_msg  }
+}
+
+sub is_required_if {
+    my ( $condition, $err_msg ) = @_;
+    $condition = 0 unless defined $condition;
+    $err_msg ||= 'Required';
+    if ( ref($condition) && ref($condition) ne 'CODE' ) {
+        croak "is_required_if condition must be CODE or SCALAR";
+    }
+    return sub {
+        my ( $value, $params ) = @_;
+        my $required =
+          ref($condition) eq 'CODE'
+          ? $condition->($params)
+          : $condition;
+        return unless $required;
+        return defined $value && $value ne '' ? undef : $err_msg;
+    };
+}
+
+sub is_equal {
+    my ( $other, $err_msg ) = @_;
+    $err_msg ||= 'Invalid value';
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        return defined $_[1]->{$other} && $_[0] eq $_[1]->{$other}
+          ? undef
+          : $err_msg;
+    };
+}
+
+sub is_long_between {
+    my ( $min, $max, $err_msg ) = @_;
+    $err_msg ||= "Must be between $min and $max symbols";
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        length( $_[0] ) >= $min && length( $_[0] ) <= $max
+          ? undef
+          : $err_msg;
+    };
+}
+
+sub is_long_at_least {
+    my ( $length, $err_msg ) = @_;
+    $err_msg ||= "Must be at least $length symbols";
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        length( $_[0] ) >= $length ? undef : $err_msg;
+    };
+}
+
+sub is_long_at_most {
+    my ( $length, $err_msg ) = @_;
+    $err_msg ||= "Must be at the most $length symbols";
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        length( $_[0] ) <= $length ? undef : $err_msg;
+    };
+}
+
+sub is_a {
+    my ( $class, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        ref($_[0]) eq $class ? undef : $err_msg;
+    }
+}
+
+sub is_like {
+    my ( $regexp, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    croak 'Regexp expected' unless ref($regexp) eq 'Regexp';
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        $_[0] =~ $regexp ? undef : $err_msg;
+    };
+}
+
+sub is_in {
+    my ( $arrayref, $err_msg ) = @_;
+    $err_msg ||= "Invalid value";
+    croak 'ArrayRef expected' unless ref($arrayref) eq 'ARRAY';
+    return sub {
+        return undef if !defined($_[0]) || $_[0] eq '';
+        _match( $_[0], $arrayref ) ? undef : $err_msg;
+      }
+}
+
+sub new {
+    my ( $class, $input, $rules ) = @_;
+    if ( ref $input ne 'HASH' || ref $rules ne 'HASH' ) {
+        confess("Parameters and rules HASH refs are needed");
+    }
+    bless {
+        input  => $input,
+        rules  => $rules,
+        result => validate( $input, $rules )
+    }, $class;
+}
+
+sub error_string {
+    my ( $self, %args ) = @_;
+    return "" if $self->success;
+
+    $args{separator} = defined $args{separator} ? $args{separator} : ';';
+    $args{names} = defined $args{names} ? $args{names} : {};
+    $args{template} = defined $args{template} ? $args{template} : '[%s] %s';
+
+    if ( ref($args{names}) ne 'HASH' ) {
+        croak("names must be a reference to a HASH");
+    }
+
+    my @errors = map {
+        sprintf( $args{template}, ($args{names}->{$_} || $_), $self->error($_) )
+    } keys %{$self->error};
+
+    return $args{single}
+        ? shift @errors
+        : join( $args{separator}, @errors );
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    our $AUTOLOAD;
+    my $sub = $AUTOLOAD =~ /::(\w+)$/ ? $1 : undef;
+    if ( $sub eq 'params' || $sub eq 'rules' ) {
+        return $self->{$sub};
+    }
+    elsif ( $sub eq 'data' || $sub eq 'error' ) {
+        if ( my $field = shift ) {
+            my $fields = $self->{rules}->{fields};
+            if ( scalar(@$fields) ) {
+                croak("Undefined field $sub($field)")
+                  unless _match( $field, $fields );
+            }
+            return $self->{result}->{$sub}->{ $field };
+        }
+        else {
+            return {%{$self->{result}->{$sub}}};
+        }
+    }
+    elsif ( $sub eq 'success' ) {
+        return $self->{result}->{success}
+    }
+    elsif ( $sub eq 'to_hash' ) {
+        return {%{$self->{result}}}
+    }
+    else {
+        confess "Undefined method $AUTOLOAD";
+    }
+}
+
+sub DESTROY {}
+
+1;
+
+__END__
+
+=pod
+
 =head1 NAME
 
 Validate::Tiny - Minimalistic data validation
 
 =head1 VERSION
 
-Version 0.983
-
-=cut
-
-our $VERSION = '0.983';
+Version 0.984
 
 =head1 SYNOPSIS
 
@@ -406,116 +695,6 @@ otherwise the error messages will be stored in C<%error>. If C<success>
 is 0, C<%data> may or may not contain values, but its use is not
 recommended.
 
-=cut
-
-sub validate {
-    my ( $input, $rules ) = @_;
-    my $error = {};
-
-    # Sanity check
-    #
-    if ( !defined $rules->{fields} ) {
-        die 'You must define a fields array';
-    }
-
-    for (qw/filters checks/) {
-        next unless exists $rules->{$_};
-        if ( ref( $rules->{$_} ) ne 'ARRAY' || @{ $rules->{$_} } % 2 ) {
-            die "$_ must be an array with an even number of elements";
-        }
-    }
-
-    for ( keys %$rules ) {
-        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' ) {
-            die "Unknown key $_";
-        }
-    }
-
-    my $param = {};
-    my @fields = @{ $rules->{fields} } ? @{ $rules->{fields} } : keys(%$input);
-
-    # Add existing, filtered input to $param
-    #
-    for my $key ( @fields ) {
-        if ( exists $input->{$key} ) {
-            $param->{$key} = _process( $rules->{filters}, $input, $key );
-        }
-    }
-
-    # Process all checks for $param
-    #
-    for my $key ( @fields ) {
-        my $err = _process( $rules->{checks}, $param, $key, 1 );
-        $error->{$key} ||= $err if $err;
-    }
-
-    return {
-        success => keys %$error ? 0 : 1,
-        error   => $error,
-        data    => $param
-    };
-
-}
-
-sub _run_code {
-    my ( $code, $value, $param, $key ) = @_;
-    my $result = $value;
-    if ( ref $code eq 'CODE' ) {
-        $result = $code->( $value, $param, $key );
-        $value = $result unless defined $param;
-    }
-    elsif ( ref $code eq 'ARRAY' ) {
-        for (@$code) {
-            $result = _run_code( $_, $value, $param, $key );
-            if ( defined $param ) {
-                last if $result;
-            }
-            else {
-                $value = $result;
-            }
-        }
-    }
-    else {
-        die 'Filters and checks must be either sub{} or []';
-    }
-
-    return $result;
-}
-
-sub _process {
-    my ( $pairs, $param, $key, $check ) = @_;
-    my $value = $param->{$key};
-    my $iterator = natatime(2, @$pairs);
-    while ( my ( $match, $code ) = $iterator->() ) {
-        if ( _match($key, $match) ) {
-            my $temp = _run_code( $code, $value, $check ? ($param, $key) : undef );
-            if ( $check ) {
-                return $temp if $temp
-            }
-            else {
-                $value = $temp;
-            }
-        }
-    }
-    return $check ? undef : $value;
-}
-
-sub _match {
-    my ( $a, $b ) = @_;
-    if ( !ref($b) ) {
-        return $a eq $b;
-    }
-    elsif ( ref($b) eq 'ARRAY' ) {
-        return grep { $a eq $_ } @$b;
-    }
-    elsif ( ref($b) eq 'Regexp' ) {
-        return $a =~ $b;
-    }
-    else {
-        return 0;
-    }
-}
-
 =head2 filter
 
     filter( $name1, $name2, ... );
@@ -559,28 +738,6 @@ Upper case.
 
 Upper case first letter
 
-=cut
-
-sub filter {
-    my $FILTERS = {
-        trim    => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0] },
-        strip   => sub { $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
-        lc      => sub { lc $_[0] },
-        uc      => sub { uc $_[0] },
-        ucfirst => sub { ucfirst $_[0] },
-    };
-    my @result = ();
-    for (@_) {
-        if ( exists $FILTERS->{$_} ) {
-            push @result, $FILTERS->{$_};
-        }
-        else {
-            die "Invalid filter: $_";
-        }
-    }
-    return @result == 1 ? $result[0] : \@result;
-}
-
 =head2 is_required
 
     is_required( $opt_error_msg );
@@ -588,13 +745,6 @@ sub filter {
 C<is_required> provides a shortcut to an anonymous subroutine that checks
 if the matched field is defined and it is not an empty string. Optionally,
 you can provide a custom error message to be returned.
-
-=cut
-
-sub is_required {
-    my $err_msg = shift || 'Required';
-    return sub { defined $_[0] && $_[0] ne '' ? undef : $err_msg  }
-}
 
 =head2 is_required_if
 
@@ -633,26 +783,6 @@ Second example:
         ]
     };
 
-=cut
-
-sub is_required_if {
-    my ( $condition, $err_msg ) = @_;
-    $condition = 0 unless defined $condition;
-    $err_msg ||= 'Required';
-    if ( ref($condition) && ref($condition) ne 'CODE' ) {
-        croak "is_required_if condition must be CODE or SCALAR";
-    }
-    return sub {
-        my ( $value, $params ) = @_;
-        my $required =
-          ref($condition) eq 'CODE'
-          ? $condition->($params)
-          : $condition;
-        return unless $required;
-        return defined $value && $value ne '' ? undef : $err_msg;
-    };
-}
-
 =head2 is_equal
 
     is_equal( $other_field_name, $opt_error_msg )
@@ -666,20 +796,6 @@ value of another field within the input hash. Example:
         ]
     };
 
-=cut
-
-sub is_equal {
-    my ( $other, $err_msg ) = @_;
-    $err_msg ||= 'Invalid value';
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        return defined $_[1]->{$other} && $_[0] eq $_[1]->{$other}
-          ? undef
-          : $err_msg;
-    };
-}
-
-
 =head2 is_long_between
 
     my $rules = {
@@ -690,19 +806,6 @@ sub is_equal {
 
 Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally you
 can provide a custom error message. The default is I<Invalid value>.
-
-=cut
-
-sub is_long_between {
-    my ( $min, $max, $err_msg ) = @_;
-    $err_msg ||= "Must be between $min and $max symbols";
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) >= $min && length( $_[0] ) <= $max
-          ? undef
-          : $err_msg;
-    };
-}
 
 =head2 is_long_at_least
 
@@ -715,17 +818,6 @@ sub is_long_between {
 Checks if the length of the value is >= C<$length>. Optionally you can
 provide a custom error message. The default is I<Must be at least %i symbols>.
 
-=cut
-
-sub is_long_at_least {
-    my ( $length, $err_msg ) = @_;
-    $err_msg ||= "Must be at least $length symbols";
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) >= $length ? undef : $err_msg;
-    };
-}
-
 =head2 is_long_at_most
 
     my $rules = {
@@ -737,17 +829,6 @@ sub is_long_at_least {
 Checks if the length of the value is <= C<$length>. Optionally you can
 provide a custom error message. The default is
 I<Must be at the most %i symbols>.
-
-=cut
-
-sub is_long_at_most {
-    my ( $length, $err_msg ) = @_;
-    $err_msg ||= "Must be at the most $length symbols";
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) <= $length ? undef : $err_msg;
-    };
-}
 
 =head2 is_a
 
@@ -780,17 +861,6 @@ when you need to parse dates or other user input that needs to get converted to
 an object. Since the filters get executed before checks, you can use them to
 instantiate the data, then use C<is_a> to check if you got a successful object.
 
-=cut
-
-sub is_a {
-    my ( $class, $err_msg ) = @_;
-    $err_msg ||= "Invalid value";
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        ref($_[0]) eq $class ? undef : $err_msg;
-    }
-}
-
 =head2 is_like
 
     my $rules = {
@@ -801,18 +871,6 @@ sub is_a {
 
 Checks if the value matches a regular expression. Optionally you can provide a
 custom error message.
-
-=cut
-
-sub is_like {
-    my ( $regexp, $err_msg ) = @_;
-    $err_msg ||= "Invalid value";
-    croak 'Regexp expected' unless ref($regexp) eq 'Regexp';
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        $_[0] =~ $regexp ? undef : $err_msg;
-    };
-}
 
 =head2 is_in
 
@@ -825,18 +883,6 @@ sub is_like {
 
 Checks if the value matches a set of values. Optionally you can provide a
 custom error message.
-
-=cut
-
-sub is_in {
-    my ( $arrayref, $err_msg ) = @_;
-    $err_msg ||= "Invalid value";
-    croak 'ArrayRef expected' unless ref($arrayref) eq 'ARRAY';
-    return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        _match( $_[0], $arrayref ) ? undef : $err_msg;
-      }
-}
 
 =head1 OBJECT INTERFACE
 
@@ -951,77 +997,16 @@ Default value C<0>.
 Return a result hash, much like using the procedural interface. See the output
 of L</validate> for more information.
 
-=cut
+=head1 I18N
 
-sub new {
-    my ( $class, $input, $rules ) = @_;
-    if ( ref $input ne 'HASH' || ref $rules ne 'HASH' ) {
-        confess("Parameters and rules HASH refs are needed");
-    }
-    bless {
-        input  => $input,
-        rules  => $rules,
-        result => validate( $input, $rules )
-    }, $class;
-}
-
-sub error_string {
-    my ( $self, %args ) = @_;
-    return "" if $self->success;
-
-    $args{separator} = defined $args{separator} ? $args{separator} : ';';
-    $args{names} = defined $args{names} ? $args{names} : {};
-    $args{template} = defined $args{template} ? $args{template} : '[%s] %s';
-
-    if ( ref($args{names}) ne 'HASH' ) {
-        croak("names must be a reference to a HASH");
-    }
-
-    my @errors = map {
-        sprintf( $args{template}, ($args{names}->{$_} || $_), $self->error($_) )
-    } keys %{$self->error};
-
-    return $args{single}
-        ? shift @errors
-        : join( $args{separator}, @errors );
-}
-
-sub AUTOLOAD {
-    my $self = shift;
-    our $AUTOLOAD;
-    my $sub = $AUTOLOAD =~ /::(\w+)$/ ? $1 : undef;
-    if ( $sub eq 'params' || $sub eq 'rules' ) {
-        return $self->{$sub};
-    }
-    elsif ( $sub eq 'data' || $sub eq 'error' ) {
-        if ( my $field = shift ) {
-            my $fields = $self->{rules}->{fields};
-            if ( scalar(@$fields) ) {
-                croak("Undefined field $sub($field)")
-                  unless _match( $field, $fields );
-            }
-            return $self->{result}->{$sub}->{ $field };
-        }
-        else {
-            return {%{$self->{result}->{$sub}}};
-        }
-    }
-    elsif ( $sub eq 'success' ) {
-        return $self->{result}->{success}
-    }
-    elsif ( $sub eq 'to_hash' ) {
-        return {%{$self->{result}}}
-    }
-    else {
-        confess "Undefined method $AUTOLOAD";
-    }
-}
-
-sub DESTROY {}
+A check function is considered failing if it returns a value. In the
+above examples we showed you how to return error strings. If you want to
+internationalize your errors, you can make your check closures return
+L<Locale::Maketext> functions, or any other i18n values.
 
 =head1 SEE ALSO
 
-L<Data::FormValidator>, L<Validation::Class>
+L<Data::FormValidator>
 
 =head1 BUGS
 
@@ -1047,4 +1032,3 @@ it under the terms as perl itself.
 
 =cut
 
-1; # End of Validate::Tiny
