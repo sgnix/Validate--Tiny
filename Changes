@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+0.105   2014-04-04
+        Out of beta. Stable release.
+        No code changes.
+
 0.982   2012-07-09
         Replaced "defined" with "exists" to allow filtering of keys
         with undef value.

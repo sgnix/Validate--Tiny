@@ -32,7 +32,7 @@ sub import {
     }
 }
 
-our $VERSION = '0.984';
+our $VERSION = '1.005';
 
 sub validate {
     my ( $input, $rules ) = @_;
