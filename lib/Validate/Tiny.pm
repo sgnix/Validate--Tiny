@@ -4,9 +4,11 @@ use strict;
 use warnings;
 
 use Carp;
+use Exporter;
 use List::MoreUtils 'natatime';
 
-my @EXPORT_OK = qw/
+our @ISA = qw/Exporter/;
+our @EXPORT_OK = qw/
     validate
     filter
     is_required
@@ -20,17 +22,9 @@ my @EXPORT_OK = qw/
     is_in
 /;
 
-sub import {
-    my $class = shift;
-    my $caller = caller;
-    my @rest = _match(':all', \@_) ? @EXPORT_OK : @_;
-    no strict 'refs';
-    for my $sub ( @rest ) {
-        if ( _match($sub, \@EXPORT_OK) ) {
-            *{"${caller}::$sub"} = eval("\\\&$sub");
-        }
-    }
-}
+our %EXPORT_TAGS = (
+    'all' => \@EXPORT_OK
+);
 
 our $VERSION = '1.005';
 
@@ -40,9 +34,7 @@ sub validate {
 
     # Sanity check
     #
-    if ( !defined $rules->{fields} ) {
-        die 'You must define a fields array';
-    }
+    die 'You must define a fields array' unless defined $rules->{fields};
 
     for (qw/filters checks/) {
         next unless exists $rules->{$_};
@@ -52,9 +44,7 @@ sub validate {
     }
 
     for ( keys %$rules ) {
-        if ( $_ ne 'fields' && $_ ne 'filters' && $_ ne 'checks' ) {
-            die "Unknown key $_";
-        }
+        /(fields|filters|checks)/ or die "Unknown key $_";
     }
 
     my $param = {};
@@ -63,9 +53,7 @@ sub validate {
     # Add existing, filtered input to $param
     #
     for my $key ( @fields ) {
-        if ( exists $input->{$key} ) {
-            $param->{$key} = _process( $rules->{filters}, $input, $key );
-        }
+        exists $input->{$key} and ($param->{$key} = _process( $rules->{filters}, $input, $key ));
     }
 
     # Process all checks for $param
@@ -86,11 +74,12 @@ sub validate {
 sub _run_code {
     my ( $code, $value, $param, $key ) = @_;
     my $result = $value;
-    if ( ref $code eq 'CODE' ) {
+    my $ref = ref $code;
+    if ( $ref eq 'CODE' ) {
         $result = $code->( $value, $param, $key );
         $value = $result unless defined $param;
     }
-    elsif ( ref $code eq 'ARRAY' ) {
+    elsif ( $ref eq 'ARRAY' ) {
         for (@$code) {
             $result = _run_code( $_, $value, $param, $key );
             if ( defined $param ) {
@@ -291,10 +280,10 @@ sub AUTOLOAD {
     my $self = shift;
     our $AUTOLOAD;
     my $sub = $AUTOLOAD =~ /::(\w+)$/ ? $1 : undef;
-    if ( $sub eq 'params' || $sub eq 'rules' ) {
+    if ( $sub =~ /(params|rules)/ ) {
         return $self->{$sub};
     }
-    elsif ( $sub eq 'data' || $sub eq 'error' ) {
+    elsif ( $sub =~ /(data|error)/ ) {
         if ( my $field = shift ) {
             my $fields = $self->{rules}->{fields};
             if ( scalar(@$fields) ) {
