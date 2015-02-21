@@ -26,7 +26,7 @@ our %EXPORT_TAGS = (
     'all' => \@EXPORT_OK
 );
 
-our $VERSION = '1.005';
+our $VERSION = '1.015';
 
 sub validate {
     my ( $input, $rules ) = @_;
