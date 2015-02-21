@@ -1018,7 +1018,7 @@ https://github.com/naturalist/Validate--Tiny
 
 =head1 AUTHOR
 
-    minimalist (cpan: MINIMAL) - minimalist@lavabit.com
+    miniml (cpan: MINIMAL) - minimal@cpan.org
 
 =head1 CONTRIBUTORS
 
