@@ -133,7 +133,7 @@ sub _match {
 
 sub filter {
     my $FILTERS = {
-        trim    => sub { $_[0] =~ s/^\s+|\s+$//; $_[0] },
+        trim    => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
         strip   => sub { $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
         lc      => sub { lc $_[0] },
         uc      => sub { uc $_[0] },
