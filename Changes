@@ -1,5 +1,8 @@
 Revision history for Validate-Tiny
 
+1.015   2015-02-21
+        Code refactoring
+
 0.105   2014-04-04
         Out of beta. Stable release.
         No code changes.
