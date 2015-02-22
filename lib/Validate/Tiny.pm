@@ -1011,7 +1011,7 @@ https://github.com/naturalist/Validate--Tiny
 
 =head1 CONTRIBUTORS
 
-    Patrice Clement (cpan: MONSIEUR) - monsieurp@gentoo.org
+    Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
     Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
     Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
 
