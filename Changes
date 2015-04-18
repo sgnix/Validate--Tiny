@@ -1,5 +1,18 @@
 Revision history for Validate-Tiny
 
+1.501   2015-04-18 !!! Not backwards compatible. Read notes !!!
+        
+        [Bug fixes]
+        - filters checked for undefined values
+
+        [New features]
+        - A new %FILTER hash allows a user to add custom filters
+        - Object interface changed - new is now just a constructor and
+          check is used to do actual validation. To adapt your code,
+          it should be enough to just replace all Validate::Tiny->new with
+          Validate::Tiny->check.
+        - Removed error_string function
+
 1.015   2015-02-21
         Code refactoring
 

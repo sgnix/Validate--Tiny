@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Validate::Tiny ':all';
-use Test::More tests => 3;
+use Test::More;
 
 my $rules = {
     fields  => [qw/a b c/],
@@ -16,7 +16,12 @@ my $input = {
     c => 'baz'
 };
 
-my $res = validate($input, $rules);
+my $res = validate({a => undef}, $rules);
+is $res->{a}, undef;
+
+$res = validate($input, $rules);
 is $res->{data}->{a}, 'bar', "lc";
 is $res->{data}->{b}, 'FOO', "uc";
 is $res->{data}->{c}, 'Baz', "ucfirst";
+
+done_testing;

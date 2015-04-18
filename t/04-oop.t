@@ -3,14 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 36;
+use Test::More;
 use Validate::Tiny;
 
 my $rules = {
     fields => [qw/a b/],
     checks => [ a => sub { $_[0] < 5 ? undef : 'Error' } ]
 };
-my $result = Validate::Tiny->new( { a=> 1 }, $rules );
+my $result = Validate::Tiny->check( { a=> 1 }, $rules );
 my $r2 = Validate::Tiny::validate( { a => 1 }, $rules );
 
 # Sanity
@@ -29,7 +29,7 @@ my $r2 = Validate::Tiny::validate( { a => 1 }, $rules );
 # Empty fields list
 {
     my $rules = { fields => [] };
-    my $result = Validate::Tiny->new( { a => 1 }, $rules );
+    my $result = Validate::Tiny->check( { a => 1 }, $rules );
     is $result->data('a'), 1;
     is $result->data('b'), undef;
 }
@@ -54,7 +54,7 @@ is_deeply( $result->error,   $r2->{error}, 'can not change error' );
 is_deeply( $result->success, $r2->{success}, 'success match' );
 is_deeply( $result->to_hash, $r2, 'to_hash match' );
 
-$result = Validate::Tiny->new( { a => 11 }, $rules );
+$result = Validate::Tiny->check( { a => 11 }, $rules );
 $r2 = Validate::Tiny::validate( { a => 11 }, $rules );
 is( $result->error('a'), 'Error', 'functional error' );
 is( $result->error->{a}, 'Error', 'hash error' );
@@ -67,38 +67,26 @@ $rules->{checks} = [
     a => sub { $_[0] < 5 ? undef : 'ErrorA' },
     b => sub { $_[0] < 2 ? undef : 'ErrorB' }
 ];
-$result = Validate::Tiny->new( { a => 11, b => 11 }, $rules );
-my $str = $result->error_string;
-like $str, qr/\[a\] ErrorA/;
-like $str, qr/\[b\] ErrorB/;
 
-$str = $result->error_string(
-    single => 1
-);
+# New and filters
+{
+    my $v = Validate::Tiny->new(
+        filters => {
+            only_digits => sub {
+                my $val = shift // return;
+                $val =~ s/\D//g;
+                return $val;
+            }
+        }
+    );
 
-ok( $str eq '[a] ErrorA' || $str eq '[b] ErrorB' );
+    my $rules = {
+        fields  => ['a'],
+        filters => [ a => Validate::Tiny::filter( 'trim', 'only_digits' ) ]
+    };
+    $v->check( { a => ' abc123 ' }, $rules );
 
-$str = $result->error_string(
-    separator => 'bangladesh'
-);
-like $str, qr/\[a\] ErrorA/;
-like $str, qr/\[b\] ErrorB/;
-like $str, qr/bangladesh/;
+    is $v->data->{a}, '123';
+}
 
-$str = $result->error_string(
-    template => '*%s*%s'
-);
-like $str, qr/\*a\*ErrorA/;
-like $str, qr/\*b\*ErrorB/;
-
-$str = $result->error_string(
-    names => { a => 'Bar', b => 'Foo' }
-);
-like $str, qr/\[Bar\] ErrorA/;
-like $str, qr/\[Foo\] ErrorB/;
-
-$result = Validate::Tiny->new( { a => 11, b => 1 }, $rules );
-$str = $result->error_string;
-like $str, qr/\[a\] ErrorA/;
-unlike $str, qr/\[b\] ErrorB/;
-
+done_testing;

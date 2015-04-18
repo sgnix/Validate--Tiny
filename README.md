@@ -2,10 +2,6 @@
 
 Validate::Tiny - Minimalistic data validation
 
-# VERSION
-
-Version 0.984
-
 # SYNOPSIS
 
 Filter and validate user input from forms, etc.
@@ -78,26 +74,28 @@ Or if you prefer an OOP approach:
 ```perl
 use Validate::Tiny;
 
-my $result = Validate::Tiny->new( $input, $rules );
-if ( $result->success ) {
-    my $values_hash = $result->data;
-    my $name        = $result->data('name');
-    my $email       = $result->data('email');
+my $v = Validate::Tiny->new( %args );
+$v->check( $input, $rules );
+
+if ( $v->success ) {
+    my $values_hash = $v->data;
+    my $name        = $v->data('name');
+    my $email       = $v->data('email');
     ...;
 }
 else {
-    my $errors_hash = $result->error;
-    my $name_error  = $result->error('name');
-    my $email_error = $result->error('email');
+    my $errors_hash = $v->error;
+    my $name_error  = $v->error('name');
+    my $email_error = $v->error('email');
 }
 ```
 
 # DESCRIPTION
 
-This module provides a simple, light and minimalistic way of validating user
-input. Except perl core modules and some test modules it has no other
-dependencies, which is why it does not implement any complicated checks and
-filters such as email and credit card matching. The basic idea of this
+This module provides a simple, light and minimalistic way of validating
+user input. Except perl core modules and some test modules it has no other
+dependencies, which is why it does not implement any complicated checks
+and filters such as email and credit card matching. The basic idea of this
 module is to provide the validation functionality, and leave it up to the
 user to write their own data filters and checks. If you need a complete
 data validation solution that comes with many ready features, I recommend
@@ -111,13 +109,13 @@ The basic principle of data/form validation is that any user input must be
 sanitized and checked for errors before used in the logic of the program.
 Validate::Tiny breaks this process in three steps:
 
-1. Specify the fields you want to work with via ["fields"](#fields).
-All others will be disregarded.
-2. Filter the fields' values using ["filters"](#filters). A filter
-can be as simple as changing to lower case or removing excess white space,
-or very complicated such as parsing and removing HTML tags.
-3. Perform a series of ["checks"](#checks) on the filtered values, to make sure
-they match the requirements. Again, the checks can be very simple as in
+1. Specify the fields you want to work with via ["fields"](#fields).  All others will
+be disregarded.
+2. Filter the fields' values using ["filters"](#filters). A filter can be as simple as
+changing to lower case or removing excess white space, or very complicated
+such as parsing and removing HTML tags.
+3. Perform a series of ["checks"](#checks) on the filtered values, to make sure they
+match the requirements. Again, the checks can be very simple as in
 checking if the value was defined, or very complicated as in checking if
 the value is a valid credit card number.
 
@@ -141,8 +139,8 @@ use Validate::Tiny qw/validate/;
 my $result = validate( \%input, \%rules );
 ```
 
-Validates user input against a set of rules. The input is expected to be
-a reference to a hash.
+Validates user input against a set of rules. The input is expected to be a
+reference to a hash.
 
 ### %rules
 
@@ -154,15 +152,14 @@ my %rules = (
 );
 ```
 
-`rules` is a hash containing references to the following three
-arrays: ["fields"](#fields), ["filters"](#filters) and ["checks"](#checks).
+`rules` is a hash containing references to the following three arrays:
+["fields"](#fields), ["filters"](#filters) and ["checks"](#checks).
 
 #### fields
 
-An array containing the names of the fields that must be filtered,
-checked and returned. All others will be disregarded. As of version
-0.981 you can use an empty array for `fields`, which will work on
-all input fields.
+An array containing the names of the fields that must be filtered, checked
+and returned. All others will be disregarded. As of version 0.981 you can
+use an empty array for `fields`, which will work on all input fields.
 
 ```perl
 my @field_names = qw/username email password password2/;
@@ -176,11 +173,11 @@ my @field_names = ();   # Use all input fields
 
 #### filters
 
-An array containing name matches and filter subs. The array must have
-an even number of elements. Each _odd_ element is a field name match and
+An array containing name matches and filter subs. The array must have an
+even number of elements. Each _odd_ element is a field name match and
 each _even_ element is a reference to a filter subroutine or a chain of
-filter subroutines. A filter subroutine takes one parameter - the value
-to be filtered, and returns the modified value.
+filter subroutines. A filter subroutine takes one parameter - the value to
+be filtered, and returns the modified value.
 
 ```perl
 my @filters_array = (
@@ -205,8 +202,8 @@ my @filters_array = (
 );
 ```
 
-Instead of a single filter subroutine, you can pass an array of subroutines
-to provide a chain of filters:
+Instead of a single filter subroutine, you can pass an array of
+subroutines to provide a chain of filters:
 
 ```perl
 my @filters_array = (
@@ -225,6 +222,19 @@ use Validate::Tiny qw/validate :util/;
 my @filters_array = (
     name => filter(qw/strip trim lc/)
 );
+```
+
+#### Adding custom filters
+
+This module exposes `our %FILTERS`, a hash containing available filters.
+To add a filter, add a new key-value to this hash:
+
+```perl
+$Validate::Tiny::FILTERS{only_digits} = sub {
+    my $val = shift // return;
+    $val =~ s/\D//g;
+    return $val;
+};
 ```
 
 #### checks
@@ -324,26 +334,25 @@ my $rules = {
 };
 ```
 
-The above examples show how we make sure that `password` is defined
-and not empty before we check if it is a good password.
-Of course we can check if `password` is defined inside `is_good_password`,
-but it would be redundant. Also, this approach will fail if `password` is
-not required, but must pass the rules for a good password if provided.
+The above examples show how we make sure that `password` is defined and
+not empty before we check if it is a good password.  Of course we can
+check if `password` is defined inside `is_good_password`, but it would
+be redundant. Also, this approach will fail if `password` is not
+required, but must pass the rules for a good password if provided.
 
 #### Chaining
 
-The above example also shows that chaining check subroutines
-is available in the same fashion as chaining filter subroutines.
-The difference between chaining filters and chaining checks is that
-a chain of filters will always run **all** filters, and a chain of checks
-will exit after the first failed check and return its error message.
-This way the `$result->{error}` hash always has a single error message
-per field.
+The above example also shows that chaining check subroutines is available
+in the same fashion as chaining filter subroutines.  The difference
+between chaining filters and chaining checks is that a chain of filters
+will always run **all** filters, and a chain of checks will exit after the
+first failed check and return its error message.  This way the
+`$result->{error}` hash always has a single error message per field.
 
 #### Using closures
 
-When writing reusable check subroutines, sometimes you will want to
-be able to pass arguments. Returning closures (anonymous subs) is the
+When writing reusable check subroutines, sometimes you will want to be
+able to pass arguments. Returning closures (anonymous subs) is the
 recommended approach:
 
 ```perl
@@ -381,9 +390,8 @@ $result = {
 ```
 
 If `success` is 1 all of the filtered input will be in `%data`,
-otherwise the error messages will be stored in `%error`. If `success`
-is 0, `%data` may or may not contain values, but its use is not
-recommended.
+otherwise the error messages will be stored in `%error`. If `success` is
+0, `%data` may or may not contain values, but its use is not recommended.
 
 ## filter
 
@@ -391,8 +399,8 @@ recommended.
 filter( $name1, $name2, ... );
 ```
 
-Provides a shortcut to some basic text filters. In reality, it returns
-a list of anonymous subs, so the following:
+Provides a shortcut to some basic text filters. In reality, it returns a
+list of anonymous subs, so the following:
 
 ```perl
 my $rules = {
@@ -514,8 +522,8 @@ my $rules = {
 };
 ```
 
-Checks if the length of the value is >= `$min` and <= `$max`. Optionally you
-can provide a custom error message. The default is _Invalid value_.
+Checks if the length of the value is >= `$min` and <= `$max`. Optionally
+you can provide a custom error message. The default is _Invalid value_.
 
 ## is\_long\_at\_least
 
@@ -528,7 +536,8 @@ my $rules = {
 ```
 
 Checks if the length of the value is >= `$length`. Optionally you can
-provide a custom error message. The default is _Must be at least %i symbols_.
+provide a custom error message. The default is _Must be at least %i
+symbols_.
 
 ## is\_long\_at\_most
 
@@ -541,8 +550,8 @@ my $rules = {
 ```
 
 Checks if the length of the value is <= `$length`. Optionally you can
-provide a custom error message. The default is
-_Must be at the most %i symbols_.
+provide a custom error message. The default is _Must be at the most %i
+symbols_.
 
 ## is\_a
 
@@ -572,10 +581,11 @@ my $rules = {
 };
 ```
 
-Checks if the value is an instance of a class. This can be particularly useful,
-when you need to parse dates or other user input that needs to get converted to
-an object. Since the filters get executed before checks, you can use them to
-instantiate the data, then use `is_a` to check if you got a successful object.
+Checks if the value is an instance of a class. This can be particularly
+useful, when you need to parse dates or other user input that needs to get
+converted to an object. Since the filters get executed before checks, you
+can use them to instantiate the data, then use `is_a` to check if you got
+a successful object.
 
 ## is\_like
 
@@ -587,8 +597,8 @@ my $rules = {
 };
 ```
 
-Checks if the value matches a regular expression. Optionally you can provide a
-custom error message.
+Checks if the value matches a regular expression. Optionally you can
+provide a custom error message.
 
 ## is\_in
 
@@ -606,25 +616,35 @@ custom error message.
 
 # OBJECT INTERFACE
 
-## new
+## new( %args )
 
-Validates the input against the rules and returns a class instance.
+At this point the only argument you can use in `%args` is `filters`,
+which should be a hashref with additional filters to be added to the
+`%FILTERS` hash.
 
 ```perl
-use Validate::Tiny;
+my $v = Validate::Tiny->new(
+    filters => {
+        only_digits => sub {
+            my $val = shift // return;
+            $val =~ s/\D//g;
+            return $val;
+        }
+    }
+);
+```
 
-my $result = Validate::Tiny->new( $input, $rules );
-if ( $result->success ) {
+## check( \\%input, %rules )
 
-    # Do something with the data
-    $result->data->{name};
-    $result->data('name');
-}
-else {
+Checks the input agains the rules and initalized internal result state.
 
-    # Do something with the errors
-    $result->error->{name};
-    $result->error('name');
+```perl
+my %input = ( bar => 'abc' );
+my %rules = ( fields => ['bar'], filters => filter('uc') );
+$v->check( \%input, \%rules );
+
+if ( $v->success ) {
+    ...;
 }
 ```
 
@@ -634,9 +654,9 @@ Returns a true value if the input passed all the rules.
 
 ## data
 
-Returns a hash reference to all filtered fields. If called with a parameter,
-it will return the value of that field or croak if there is no such field defined
-in the fields array.
+Returns a hash reference to all filtered fields. If called with a
+parameter, it will return the value of that field or croak if there is no
+such field defined in the fields array.
 
 ```perl
 my $all_fields = $result->data;
@@ -645,94 +665,24 @@ my $email      = $result->data('email');
 
 ## error
 
-Returns a hash reference to all error messages. If called with a parameter,
-it will return the error message of that field, or croak if there is no such
-field.
+Returns a hash reference to all error messages. If called with a
+parameter, it will return the error message of that field, or croak if
+there is no such field.
 
 ```perl
 my $errors = $result->error;
 my $email = $result->error('email');
 ```
 
-## error\_string
-
-Returns a string with all errors. Sometimes you may want to display all errors
-together in a string. This function makes that easy.
-
-```perl
-my $str = $result->error_string;    # return a string with all errors
-my $str = $result->error_string(
-    template  => '%s is %s',
-    separator => '<br>',
-    names     => {
-        f_name => 'First name',
-        l_name => 'Last name'
-    }
-);
-
-# An example output for the above would be:
-# "First name is required<br>Last name is required"
-```
-
-`error_string` takes the following optional parameters:
-
-### template
-
-A string for the `sprintf` function. It has to have two %s's in it:
-one for the field name and one for the error message.
-
-```perl
-my $str = $result->error_string(
-    template => '(%s)%s'
-);
-
-# Result: "(field_name):Error message"
-```
-
-The default value is `[%s] %s`.
-
-### separator
-
-A character or a string which will be used to join all error messages.
-The default value is `";"`.
-
-### names
-
-A HASH reference, which contains field\_name => "Field description"
-values, so instead of `field_name` your users will see a meaningful description
-for the field.
-
-```perl
-my $str = $result->error_string(
-    template => '%s %s',
-    names => {
-        pass  => 'Chosen password',
-        pass2 => 'Password verification'
-    }
-);
-
-# Result: "Password verification does not match."
-```
-
-If a field description is not defined then the field name will be used.
-The default value for `names` is an empty hash.
-
-### single
-
-If this is non-zero, the result will contain the error message only for **one** of the fields.
-This can be useful when you want to display a single error at a time. The value of
-`separator` in this case is disregarded.
-Default value `0`.
-
 ## to\_hash
 
-Return a result hash, much like using the procedural interface. See the output
-of ["validate"](#validate) for more information.
+Return a result hash, much like using the procedural interface. See the
+output of ["validate"](#validate) for more information.
 
 # I18N
 
-A check function is considered failing if it returns a value. In the
-above examples we showed you how to return error strings. If you want to
+A check function is considered failing if it returns a value. In the above
+examples we showed you how to return error strings. If you want to
 internationalize your errors, you can make your check closures return
 [Locale::Maketext](https://metacpan.org/pod/Locale::Maketext) functions, or any other i18n values.
 
@@ -760,9 +710,10 @@ miniml (cpan: MINIMAL) - minimal@cpan.org
 Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
 Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
 Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
+Daya Sagar Nune
 ```
 
 # LICENCE
 
-This program is free software; you can redistribute it and/or modify
-it under the terms as perl itself.
+This program is free software; you can redistribute it and/or modify it
+under the terms as perl itself.

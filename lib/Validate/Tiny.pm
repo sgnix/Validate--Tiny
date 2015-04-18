@@ -26,7 +26,15 @@ our %EXPORT_TAGS = (
     'all' => \@EXPORT_OK
 );
 
-our $VERSION = '1.015';
+our $VERSION = '1.501';
+
+our %FILTERS = (
+    trim    => sub { $_[0] // return; $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
+    strip   => sub { $_[0] // return; $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
+    lc      => sub { $_[0] // return; lc $_[0] },
+    uc      => sub { $_[0] // return; uc $_[0] },
+    ucfirst => sub { $_[0] // return; ucfirst $_[0] },
+);
 
 sub validate {
     my ( $input, $rules ) = @_;
@@ -44,7 +52,7 @@ sub validate {
     }
 
     for ( keys %$rules ) {
-        /(fields|filters|checks)/ or die "Unknown key $_";
+        /^(fields|filters|checks)$/ or die "Unknown key $_";
     }
 
     my $param = {};
@@ -132,17 +140,10 @@ sub _match {
 }
 
 sub filter {
-    my $FILTERS = {
-        trim    => sub { $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
-        strip   => sub { $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
-        lc      => sub { lc $_[0] },
-        uc      => sub { uc $_[0] },
-        ucfirst => sub { ucfirst $_[0] },
-    };
     my @result = ();
     for (@_) {
-        if ( exists $FILTERS->{$_} ) {
-            push @result, $FILTERS->{$_};
+        if ( exists $FILTERS{$_} ) {
+            push @result, $FILTERS{$_};
         }
         else {
             die "Invalid filter: $_";
@@ -244,36 +245,29 @@ sub is_in {
 }
 
 sub new {
-    my ( $class, $input, $rules ) = @_;
+    my ( $class, %args ) = @_;
+    my $filters = $args{filters};
+    if ( defined $filters && ref $filters eq 'HASH' ) {
+        for my $key ( keys %$filters ) {
+            $FILTERS{$key} = $filters->{$key} if ref $filters->{$key} eq 'CODE';
+        }
+    }
+    bless \%args, $class;
+}
+
+sub check {
+    my ( $self, $input, $rules, %args ) = @_;
+    $self = $self->new( %args ) unless ref $self;
+
     if ( ref $input ne 'HASH' || ref $rules ne 'HASH' ) {
         confess("Parameters and rules HASH refs are needed");
     }
-    bless {
-        input  => $input,
-        rules  => $rules,
-        result => validate( $input, $rules )
-    }, $class;
-}
 
-sub error_string {
-    my ( $self, %args ) = @_;
-    return "" if $self->success;
+    $self->{input} = $input;
+    $self->{rules} = $rules;
+    $self->{result} = validate( $input, $rules );
 
-    $args{separator} = defined $args{separator} ? $args{separator} : ';';
-    $args{names} = defined $args{names} ? $args{names} : {};
-    $args{template} = defined $args{template} ? $args{template} : '[%s] %s';
-
-    if ( ref($args{names}) ne 'HASH' ) {
-        croak("names must be a reference to a HASH");
-    }
-
-    my @errors = map {
-        sprintf( $args{template}, ($args{names}->{$_} || $_), $self->error($_) )
-    } keys %{$self->error};
-
-    return $args{single}
-        ? shift @errors
-        : join( $args{separator}, @errors );
+    return $self;
 }
 
 sub AUTOLOAD {
@@ -318,10 +312,6 @@ __END__
 =head1 NAME
 
 Validate::Tiny - Minimalistic data validation
-
-=head1 VERSION
-
-Version 0.984
 
 =head1 SYNOPSIS
 
@@ -393,25 +383,27 @@ Or if you prefer an OOP approach:
 
     use Validate::Tiny;
 
-    my $result = Validate::Tiny->new( $input, $rules );
-    if ( $result->success ) {
-        my $values_hash = $result->data;
-        my $name        = $result->data('name');
-        my $email       = $result->data('email');
+    my $v = Validate::Tiny->new( %args );
+    $v->check( $input, $rules );
+
+    if ( $v->success ) {
+        my $values_hash = $v->data;
+        my $name        = $v->data('name');
+        my $email       = $v->data('email');
         ...;
     }
     else {
-        my $errors_hash = $result->error;
-        my $name_error  = $result->error('name');
-        my $email_error = $result->error('email');
+        my $errors_hash = $v->error;
+        my $name_error  = $v->error('name');
+        my $email_error = $v->error('email');
     }
 
 =head1 DESCRIPTION
 
-This module provides a simple, light and minimalistic way of validating user
-input. Except perl core modules and some test modules it has no other
-dependencies, which is why it does not implement any complicated checks and
-filters such as email and credit card matching. The basic idea of this
+This module provides a simple, light and minimalistic way of validating
+user input. Except perl core modules and some test modules it has no other
+dependencies, which is why it does not implement any complicated checks
+and filters such as email and credit card matching. The basic idea of this
 module is to provide the validation functionality, and leave it up to the
 user to write their own data filters and checks. If you need a complete
 data validation solution that comes with many ready features, I recommend
@@ -429,19 +421,19 @@ Validate::Tiny breaks this process in three steps:
 
 =item 1
 
-Specify the fields you want to work with via L</fields>.
-All others will be disregarded.
+Specify the fields you want to work with via L</fields>.  All others will
+be disregarded.
 
 =item 2
 
-Filter the fields' values using L</filters>. A filter
-can be as simple as changing to lower case or removing excess white space,
-or very complicated such as parsing and removing HTML tags.
+Filter the fields' values using L</filters>. A filter can be as simple as
+changing to lower case or removing excess white space, or very complicated
+such as parsing and removing HTML tags.
 
 =item 3
 
-Perform a series of L</checks> on the filtered values, to make sure
-they match the requirements. Again, the checks can be very simple as in
+Perform a series of L</checks> on the filtered values, to make sure they
+match the requirements. Again, the checks can be very simple as in
 checking if the value was defined, or very complicated as in checking if
 the value is a valid credit card number.
 
@@ -465,8 +457,8 @@ request any of the below subroutines or use ':all' to export all.
 
     my $result = validate( \%input, \%rules );
 
-Validates user input against a set of rules. The input is expected to be
-a reference to a hash.
+Validates user input against a set of rules. The input is expected to be a
+reference to a hash.
 
 =head3 %rules
 
@@ -476,15 +468,14 @@ a reference to a hash.
         checks  => \@checks_array
     );
 
-C<rules> is a hash containing references to the following three
-arrays: L</fields>, L</filters> and L</checks>.
+C<rules> is a hash containing references to the following three arrays:
+L</fields>, L</filters> and L</checks>.
 
 =head4 fields
 
-An array containing the names of the fields that must be filtered,
-checked and returned. All others will be disregarded. As of version
-0.981 you can use an empty array for C<fields>, which will work on
-all input fields.
+An array containing the names of the fields that must be filtered, checked
+and returned. All others will be disregarded. As of version 0.981 you can
+use an empty array for C<fields>, which will work on all input fields.
 
     my @field_names = qw/username email password password2/;
 
@@ -494,11 +485,11 @@ or
 
 =head4 filters
 
-An array containing name matches and filter subs. The array must have
-an even number of elements. Each I<odd> element is a field name match and
+An array containing name matches and filter subs. The array must have an
+even number of elements. Each I<odd> element is a field name match and
 each I<even> element is a reference to a filter subroutine or a chain of
-filter subroutines. A filter subroutine takes one parameter - the value
-to be filtered, and returns the modified value.
+filter subroutines. A filter subroutine takes one parameter - the value to
+be filtered, and returns the modified value.
 
     my @filters_array = (
         email => sub { return lc $_[0] },    # Lowercase the email
@@ -519,8 +510,8 @@ fields:
         }
     );
 
-Instead of a single filter subroutine, you can pass an array of subroutines
-to provide a chain of filters:
+Instead of a single filter subroutine, you can pass an array of
+subroutines to provide a chain of filters:
 
     my @filters_array = (
         qr/.+/ => [ sub { lc $_[0] }, sub { ucfirst $_[0] } ]
@@ -536,6 +527,17 @@ Some simple text filters are provided by the L</filter()> subroutine.
     my @filters_array = (
         name => filter(qw/strip trim lc/)
     );
+
+=head4 Adding custom filters
+
+This module exposes C<our %FILTERS>, a hash containing available filters.
+To add a filter, add a new key-value to this hash:
+
+    $Validate::Tiny::FILTERS{only_digits} = sub {
+        my $val = shift // return;
+        $val =~ s/\D//g;
+        return $val;
+    };
 
 =head4 checks
 
@@ -626,26 +628,25 @@ and this one too:
         ]
     };
 
-The above examples show how we make sure that C<password> is defined
-and not empty before we check if it is a good password.
-Of course we can check if C<password> is defined inside C<is_good_password>,
-but it would be redundant. Also, this approach will fail if C<password> is
-not required, but must pass the rules for a good password if provided.
+The above examples show how we make sure that C<password> is defined and
+not empty before we check if it is a good password.  Of course we can
+check if C<password> is defined inside C<is_good_password>, but it would
+be redundant. Also, this approach will fail if C<password> is not
+required, but must pass the rules for a good password if provided.
 
 =head4 Chaining
 
-The above example also shows that chaining check subroutines
-is available in the same fashion as chaining filter subroutines.
-The difference between chaining filters and chaining checks is that
-a chain of filters will always run B<all> filters, and a chain of checks
-will exit after the first failed check and return its error message.
-This way the C<$result-E<gt>{error}> hash always has a single error message
-per field.
+The above example also shows that chaining check subroutines is available
+in the same fashion as chaining filter subroutines.  The difference
+between chaining filters and chaining checks is that a chain of filters
+will always run B<all> filters, and a chain of checks will exit after the
+first failed check and return its error message.  This way the
+C<$result-E<gt>{error}> hash always has a single error message per field.
 
 =head4 Using closures
 
-When writing reusable check subroutines, sometimes you will want to
-be able to pass arguments. Returning closures (anonymous subs) is the
+When writing reusable check subroutines, sometimes you will want to be
+able to pass arguments. Returning closures (anonymous subs) is the
 recommended approach:
 
     sub is_long_between {
@@ -680,16 +681,15 @@ C<validate> returns a hash ref with three elements:
     };
 
 If C<success> is 1 all of the filtered input will be in C<%data>,
-otherwise the error messages will be stored in C<%error>. If C<success>
-is 0, C<%data> may or may not contain values, but its use is not
-recommended.
+otherwise the error messages will be stored in C<%error>. If C<success> is
+0, C<%data> may or may not contain values, but its use is not recommended.
 
 =head2 filter
 
     filter( $name1, $name2, ... );
 
-Provides a shortcut to some basic text filters. In reality, it returns
-a list of anonymous subs, so the following:
+Provides a shortcut to some basic text filters. In reality, it returns a
+list of anonymous subs, so the following:
 
     my $rules = {
         filters => [
@@ -793,8 +793,8 @@ value of another field within the input hash. Example:
         ]
     };
 
-Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally you
-can provide a custom error message. The default is I<Invalid value>.
+Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
+you can provide a custom error message. The default is I<Invalid value>.
 
 =head2 is_long_at_least
 
@@ -805,7 +805,8 @@ can provide a custom error message. The default is I<Invalid value>.
     };
 
 Checks if the length of the value is >= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at least %i symbols>.
+provide a custom error message. The default is I<Must be at least %i
+symbols>.
 
 =head2 is_long_at_most
 
@@ -816,8 +817,8 @@ provide a custom error message. The default is I<Must be at least %i symbols>.
     };
 
 Checks if the length of the value is <= C<$length>. Optionally you can
-provide a custom error message. The default is
-I<Must be at the most %i symbols>.
+provide a custom error message. The default is I<Must be at the most %i
+symbols>.
 
 =head2 is_a
 
@@ -845,10 +846,11 @@ I<Must be at the most %i symbols>.
         ]
     };
 
-Checks if the value is an instance of a class. This can be particularly useful,
-when you need to parse dates or other user input that needs to get converted to
-an object. Since the filters get executed before checks, you can use them to
-instantiate the data, then use C<is_a> to check if you got a successful object.
+Checks if the value is an instance of a class. This can be particularly
+useful, when you need to parse dates or other user input that needs to get
+converted to an object. Since the filters get executed before checks, you
+can use them to instantiate the data, then use C<is_a> to check if you got
+a successful object.
 
 =head2 is_like
 
@@ -858,8 +860,8 @@ instantiate the data, then use C<is_a> to check if you got a successful object.
         ]
     };
 
-Checks if the value matches a regular expression. Optionally you can provide a
-custom error message.
+Checks if the value matches a regular expression. Optionally you can
+provide a custom error message.
 
 =head2 is_in
 
@@ -875,24 +877,32 @@ custom error message.
 
 =head1 OBJECT INTERFACE
 
-=head2 new
+=head2 new( %args )
 
-Validates the input against the rules and returns a class instance.
+At this point the only argument you can use in C<%args> is C<filters>,
+which should be a hashref with additional filters to be added to the
+C<%FILTERS> hash.
 
-    use Validate::Tiny;
+    my $v = Validate::Tiny->new(
+        filters => {
+            only_digits => sub {
+                my $val = shift // return;
+                $val =~ s/\D//g;
+                return $val;
+            }
+        }
+    );
 
-    my $result = Validate::Tiny->new( $input, $rules );
-    if ( $result->success ) {
+=head2 check( \%input, %rules )
 
-        # Do something with the data
-        $result->data->{name};
-        $result->data('name');
-    }
-    else {
+Checks the input agains the rules and initalized internal result state.
 
-        # Do something with the errors
-        $result->error->{name};
-        $result->error('name');
+    my %input = ( bar => 'abc' );
+    my %rules = ( fields => ['bar'], filters => filter('uc') );
+    $v->check( \%input, \%rules );
+
+    if ( $v->success ) {
+        ...;
     }
 
 =head2 success
@@ -901,95 +911,31 @@ Returns a true value if the input passed all the rules.
 
 =head2 data
 
-Returns a hash reference to all filtered fields. If called with a parameter,
-it will return the value of that field or croak if there is no such field defined
-in the fields array.
+Returns a hash reference to all filtered fields. If called with a
+parameter, it will return the value of that field or croak if there is no
+such field defined in the fields array.
 
     my $all_fields = $result->data;
     my $email      = $result->data('email');
 
 =head2 error
 
-Returns a hash reference to all error messages. If called with a parameter,
-it will return the error message of that field, or croak if there is no such
-field.
+Returns a hash reference to all error messages. If called with a
+parameter, it will return the error message of that field, or croak if
+there is no such field.
 
     my $errors = $result->error;
     my $email = $result->error('email');
 
-=head2 error_string
-
-Returns a string with all errors. Sometimes you may want to display all errors
-together in a string. This function makes that easy.
-
-    my $str = $result->error_string;    # return a string with all errors
-    my $str = $result->error_string(
-        template  => '%s is %s',
-        separator => '<br>',
-        names     => {
-            f_name => 'First name',
-            l_name => 'Last name'
-        }
-    );
-
-    # An example output for the above would be:
-    # "First name is required<br>Last name is required"
-
-C<error_string> takes the following optional parameters:
-
-=head3 template
-
-A string for the C<sprintf> function. It has to have two %s's in it:
-one for the field name and one for the error message.
-
-    my $str = $result->error_string(
-        template => '(%s)%s'
-    );
-
-    # Result: "(field_name):Error message"
-
-The default value is C<[%s] %s>.
-
-=head3 separator
-
-A character or a string which will be used to join all error messages.
-The default value is C<";">.
-
-=head3 names
-
-A HASH reference, which contains field_name => "Field description"
-values, so instead of C<field_name> your users will see a meaningful description
-for the field.
-
-    my $str = $result->error_string(
-        template => '%s %s',
-        names => {
-            pass  => 'Chosen password',
-            pass2 => 'Password verification'
-        }
-    );
-
-    # Result: "Password verification does not match."
-
-If a field description is not defined then the field name will be used.
-The default value for C<names> is an empty hash.
-
-=head3 single
-
-If this is non-zero, the result will contain the error message only for B<one> of the fields.
-This can be useful when you want to display a single error at a time. The value of
-C<separator> in this case is disregarded.
-Default value C<0>.
-
 =head2 to_hash
 
-Return a result hash, much like using the procedural interface. See the output
-of L</validate> for more information.
+Return a result hash, much like using the procedural interface. See the
+output of L</validate> for more information.
 
 =head1 I18N
 
-A check function is considered failing if it returns a value. In the
-above examples we showed you how to return error strings. If you want to
+A check function is considered failing if it returns a value. In the above
+examples we showed you how to return error strings. If you want to
 internationalize your errors, you can make your check closures return
 L<Locale::Maketext> functions, or any other i18n values.
 
@@ -1014,11 +960,12 @@ https://github.com/naturalist/Validate--Tiny
     Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
     Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
     Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
+    Daya Sagar Nune
 
 =head1 LICENCE
 
-This program is free software; you can redistribute it and/or modify
-it under the terms as perl itself.
+This program is free software; you can redistribute it and/or modify it
+under the terms as perl itself.
 
 =cut
 

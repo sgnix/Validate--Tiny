@@ -39,10 +39,10 @@ ok $@, "Each filter must be code or arrayref";
 eval { validate( {}, { fields => ['a'], something => [ 1, 2, 3 ] } ) };
 ok $@, "Checks for misspelled keys";
 
-eval { my $result = Validate::Tiny->new(1,2) };
+eval { my $result = Validate::Tiny->check(1,2) };
 ok $@, "Wrong params to constructor";
 
-eval { my $result = Validate::Tiny->new({}) };
+eval { my $result = Validate::Tiny->check({}) };
 ok $@, "Wrong params to constructor 2";
 
 
