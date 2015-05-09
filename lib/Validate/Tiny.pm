@@ -224,10 +224,9 @@ sub is_a {
     my ( $class, $err_msg ) = @_;
     $err_msg ||= "Invalid value";
     return sub {
-        return if !defined($_[0]) || $_[0] eq '';
-        return if ref($_[0]) eq $class;
+        return if !defined( $_[0] ) || ref( $_[0] ) eq $class;
         return $err_msg;
-    }
+    };
 }
 
 sub is_like {
