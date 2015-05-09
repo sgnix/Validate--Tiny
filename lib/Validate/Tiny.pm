@@ -13,6 +13,7 @@ our @EXPORT_OK = qw/
     filter
     is_required
     is_required_if
+    is_existing
     is_equal
     is_long_between
     is_long_at_least
@@ -178,6 +179,14 @@ sub is_required_if {
         return if defined $value && $value ne '';
         return $err_msg;
     };
+}
+
+sub is_existing {
+    my $err_msg = shift || 'Must be defined';
+    return sub {
+        return if exists $_[1]->{$_[2]};
+        return $err_msg;
+    }
 }
 
 sub is_equal {
@@ -779,6 +788,11 @@ Second example:
         ]
     };
 
+=head2 is_existing
+
+Much like C<is_required>, but checks if the field contains any value, even an
+empty string and C<undef>.
+
 =head2 is_equal
 
     is_equal( $other_field_name, $opt_error_msg )
@@ -960,14 +974,15 @@ https://github.com/naturalist/Validate--Tiny
 
 =head1 AUTHOR
 
-    miniml (cpan: MINIMAL) - minimal@cpan.org
+    Stefan G. (cpan: MINIMAL) - minimal@cpan.org
 
 =head1 CONTRIBUTORS
 
-    Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
     Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
     Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
-    Daya Sagar Nune
+    Daya Sagar Nune (cpan: DAYANUNE) - daya.webtech@gmail.com
+    val - valkoles@gmail.com
+    Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
 
 =head1 LICENCE
 
