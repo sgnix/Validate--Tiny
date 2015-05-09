@@ -27,7 +27,7 @@ our %EXPORT_TAGS = (
     'all' => \@EXPORT_OK
 );
 
-our $VERSION = '1.501';
+our $VERSION = '1.551';
 
 our %FILTERS = (
     trim    => sub { return unless defined $_[0]; $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },

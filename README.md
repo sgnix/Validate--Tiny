@@ -43,14 +43,15 @@ my $rules = {
         # custom sub validates an email address
         email => sub {
             my ( $value, $params ) = @_;
-            Email::Valid->address($value) ? undef : 'Invalid email';
+            return if Email::Valid->address($value);
+            return 'Invalid email';
         },
 
         # custom sub to validate gender
         gender => sub {
             my ( $value, $params ) = @_;
-            return $value eq 'M'
-              || $value eq 'F' ? undef : 'Invalid gender';
+            return if $value eq 'M' || $value eq 'F';
+            return 'Invalid gender';
         }
 
     ]
@@ -271,7 +272,7 @@ sub is_good_password {
     my ( $value, $params ) = @_;
 
     if ( !defined $value or $value eq '' ) {
-        return undef;
+        return;
     }
 
     if ( length($value) < 6 ) {
@@ -287,7 +288,7 @@ sub is_good_password {
     }
 
     # At this point we're happy with the password
-    return undef;
+    return;
 }
 
 my $rules = {
@@ -360,9 +361,8 @@ sub is_long_between {
     my ( $min, $max ) = @_;
     return sub {
         my $value = shift;
-        return length($value) >= $min && length($value) <= $max
-          ? undef
-          : "Must be between $min and $max symbols";
+        return if length($value) >= $min && length($value) <= $max;
+        return "Must be between $min and $max symbols";
     };
 }
 
@@ -494,6 +494,11 @@ my $rules = {
     ]
 };
 ```
+
+## is\_existing
+
+Much like `is_required`, but checks if the field contains any value, even an
+empty string and `undef`.
 
 ## is\_equal
 
@@ -701,16 +706,17 @@ https://github.com/naturalist/Validate--Tiny
 # AUTHOR
 
 ```
-miniml (cpan: MINIMAL) - minimal@cpan.org
+Stefan G. (cpan: MINIMAL) - minimal@cpan.org
 ```
 
 # CONTRIBUTORS
 
 ```
-Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
 Viktor Turskyi (cpan: KOORCHIK) - koorchik@cpan.org
 Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
-Daya Sagar Nune
+Daya Sagar Nune (cpan: DAYANUNE) - daya.webtech@gmail.com
+val - valkoles@gmail.com
+Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
 ```
 
 # LICENCE

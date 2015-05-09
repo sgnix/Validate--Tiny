@@ -1,5 +1,16 @@
 Revision history for Validate-Tiny
 
+1.551   2015-05-08
+
+        [Bug fixes]
+        Fix is_a constraint stringification issue
+
+        [New features]
+        Add is_existing constraint
+
+        [Other]
+        Return success with bare return instead of return undef
+
 1.501   2015-04-18 !!! Not backwards compatible. Read notes !!!
         
         [Bug fixes]
