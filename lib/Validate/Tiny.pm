@@ -30,11 +30,11 @@ our %EXPORT_TAGS = (
 our $VERSION = '1.501';
 
 our %FILTERS = (
-    trim    => sub { $_[0] // return; $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
-    strip   => sub { $_[0] // return; $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
-    lc      => sub { $_[0] // return; lc $_[0] },
-    uc      => sub { $_[0] // return; uc $_[0] },
-    ucfirst => sub { $_[0] // return; ucfirst $_[0] },
+    trim    => sub { return unless defined $_[0]; $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
+    strip   => sub { return unless defined $_[0]; $_[0] =~ s/(\s){2,}/$1/g; $_[0] },
+    lc      => sub { return unless defined $_[0]; lc $_[0] },
+    uc      => sub { return unless defined $_[0]; uc $_[0] },
+    ucfirst => sub { return unless defined $_[0]; ucfirst $_[0] },
 );
 
 sub validate {
