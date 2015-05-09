@@ -120,7 +120,8 @@ sub _process {
             }
         }
     }
-    return $check ? undef : $value;
+    return if $check;
+    return $value;
 }
 
 sub _match {
@@ -154,7 +155,10 @@ sub filter {
 
 sub is_required {
     my $err_msg = shift || 'Required';
-    return sub { defined $_[0] && $_[0] ne '' ? undef : $err_msg  }
+    return sub {
+        return if defined $_[0] && $_[0] ne '';
+        return $err_msg;
+    };
 }
 
 sub is_required_if {
@@ -171,7 +175,8 @@ sub is_required_if {
           ? $condition->($params)
           : $condition;
         return unless $required;
-        return defined $value && $value ne '' ? undef : $err_msg;
+        return if defined $value && $value ne '';
+        return $err_msg;
     };
 }
 
@@ -179,10 +184,9 @@ sub is_equal {
     my ( $other, $err_msg ) = @_;
     $err_msg ||= 'Invalid value';
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        return defined $_[1]->{$other} && $_[0] eq $_[1]->{$other}
-          ? undef
-          : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if defined $_[1]->{$other} && $_[0] eq $_[1]->{$other};
+        return $err_msg;
     };
 }
 
@@ -190,10 +194,9 @@ sub is_long_between {
     my ( $min, $max, $err_msg ) = @_;
     $err_msg ||= "Must be between $min and $max symbols";
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) >= $min && length( $_[0] ) <= $max
-          ? undef
-          : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if length( $_[0] ) >= $min && length( $_[0] ) <= $max;
+        return $err_msg;
     };
 }
 
@@ -201,8 +204,9 @@ sub is_long_at_least {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at least $length symbols";
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) >= $length ? undef : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if length( $_[0] ) >= $length;
+        return $err_msg;
     };
 }
 
@@ -210,8 +214,9 @@ sub is_long_at_most {
     my ( $length, $err_msg ) = @_;
     $err_msg ||= "Must be at the most $length symbols";
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        length( $_[0] ) <= $length ? undef : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if length( $_[0] ) <= $length;
+        return $err_msg;
     };
 }
 
@@ -219,8 +224,9 @@ sub is_a {
     my ( $class, $err_msg ) = @_;
     $err_msg ||= "Invalid value";
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        ref($_[0]) eq $class ? undef : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if ref($_[0]) eq $class;
+        return $err_msg;
     }
 }
 
@@ -229,8 +235,9 @@ sub is_like {
     $err_msg ||= "Invalid value";
     croak 'Regexp expected' unless ref($regexp) eq 'Regexp';
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        $_[0] =~ $regexp ? undef : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if $_[0] =~ $regexp;
+        return $err_msg;
     };
 }
 
@@ -239,8 +246,9 @@ sub is_in {
     $err_msg ||= "Invalid value";
     croak 'ArrayRef expected' unless ref($arrayref) eq 'ARRAY';
     return sub {
-        return undef if !defined($_[0]) || $_[0] eq '';
-        _match( $_[0], $arrayref ) ? undef : $err_msg;
+        return if !defined($_[0]) || $_[0] eq '';
+        return if _match( $_[0], $arrayref );
+        return $err_msg;
       }
 }
 
@@ -353,14 +361,15 @@ Filter and validate user input from forms, etc.
             # custom sub validates an email address
             email => sub {
                 my ( $value, $params ) = @_;
-                Email::Valid->address($value) ? undef : 'Invalid email';
+                return if Email::Valid->address($value);
+                return 'Invalid email';
             },
 
             # custom sub to validate gender
             gender => sub {
                 my ( $value, $params ) = @_;
-                return $value eq 'M'
-                  || $value eq 'F' ? undef : 'Invalid gender';
+                return if $value eq 'M' || $value eq 'F';
+                return 'Invalid gender';
             }
 
         ]
@@ -570,7 +579,7 @@ B<Example:>
         my ( $value, $params ) = @_;
 
         if ( !defined $value or $value eq '' ) {
-            return undef;
+            return;
         }
 
         if ( length($value) < 6 ) {
@@ -586,7 +595,7 @@ B<Example:>
         }
 
         # At this point we're happy with the password
-        return undef;
+        return;
     }
 
     my $rules = {
@@ -653,9 +662,8 @@ recommended approach:
         my ( $min, $max ) = @_;
         return sub {
             my $value = shift;
-            return length($value) >= $min && length($value) <= $max
-              ? undef
-              : "Must be between $min and $max symbols";
+            return if length($value) >= $min && length($value) <= $max;
+            return "Must be between $min and $max symbols";
         };
     }
 
