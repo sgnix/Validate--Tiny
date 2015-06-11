@@ -6,7 +6,8 @@ use Validate::Tiny ':all';
 use Test::More;
 
 $Validate::Tiny::FILTERS{only_digits} = sub {
-    my $val = shift // return;
+    my $val = shift;
+    return unless defined $val;
     $val =~ s/\D//g;
     return $val;
 };
