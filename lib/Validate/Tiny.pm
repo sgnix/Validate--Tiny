@@ -983,6 +983,7 @@ https://github.com/naturalist/Validate--Tiny
     Daya Sagar Nune (cpan: DAYANUNE) - daya.webtech@gmail.com
     val - valkoles@gmail.com
     Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
+    Graham Ollis (cpab: PLICEASE)
 
 =head1 LICENCE
 
