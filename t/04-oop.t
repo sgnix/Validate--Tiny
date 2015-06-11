@@ -73,7 +73,8 @@ $rules->{checks} = [
     my $v = Validate::Tiny->new(
         filters => {
             only_digits => sub {
-                my $val = shift // return;
+                my $val = shift;
+                return unless defined $val;
                 $val =~ s/\D//g;
                 return $val;
             }
