@@ -745,19 +745,22 @@ Upper case first letter
 
 =head2 is_required
 
-    is_required( $opt_error_msg );
+    is_required( $optional_error_message );
 
-C<is_required> provides a shortcut to an anonymous subroutine that checks
-if the matched field is defined and it is not an empty string. Optionally,
-you can provide a custom error message to be returned.
+C<is_required> provides a shortcut to an anonymous subroutine that
+checks if the matched field is defined and it is not an empty
+string.
+Optionally, you can provide a custom error message. The default is I<Required>.
+
 
 =head2 is_required_if
 
-    is_required_if( $condition, $err_msg );
+    is_required_if( $condition, $optional_error_message );
 
 Require a field conditionally. The condition can be either a scalar or a
 code reference that returns true/false value. If the condition is a code
 reference, it will be passed the C<$params> hash with all filtered fields.
+Optionally, you can provide a custom error message. The default is I<Required>.
 
 Example:
 
@@ -790,15 +793,21 @@ Second example:
 
 =head2 is_existing
 
+    is_existing( $optional_error_message );
+
 Much like C<is_required>, but checks if the field contains any value, even an
 empty string and C<undef>.
+Optionally, you can provide a custom error message. The default is I<Must be defined>.
 
 =head2 is_equal
 
-    is_equal( $other_field_name, $opt_error_msg )
+    is_equal( $other_field_name, $optional_error_message );
 
 C<is_equal> checks if the value of the matched field is the same as the
-value of another field within the input hash. Example:
+value of another field within the input hash.
+Optionally, you can provide a custom error message. The default is I<Invalid value>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -808,16 +817,29 @@ value of another field within the input hash. Example:
 
 =head2 is_long_between
 
+    is_long_between( $min, $max, $optional_error_message );
+
+Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
+you can provide a custom error message. The default is I<Invalid value>.
+
+Example:
+
     my $rules = {
         checks => [
             username => is_long_between( 6, 25, 'Bad username' )
         ]
     };
 
-Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
-you can provide a custom error message. The default is I<Invalid value>.
 
 =head2 is_long_at_least
+
+    is_long_at_least( $length, $optional_error_message );
+
+Checks if the length of the value is >= C<$length>. Optionally you can
+provide a custom error message. The default is I<Must be at least %i
+symbols>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -825,11 +847,16 @@ you can provide a custom error message. The default is I<Invalid value>.
         ]
     };
 
-Checks if the length of the value is >= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at least %i
-symbols>.
 
 =head2 is_long_at_most
+
+    is_long_at_most( $length, $optional_error_message );
+
+Checks if the length of the value is <= C<$length>. Optionally you can
+provide a custom error message. The default is I<Must be at the most %i
+symbols>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -837,11 +864,19 @@ symbols>.
         ]
     };
 
-Checks if the length of the value is <= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at the most %i
-symbols>.
 
 =head2 is_a
+
+    is_a ( $class, $optional_error_message );
+
+Checks if the value is an instance of a class. This can be particularly
+useful, when you need to parse dates or other user input that needs to get
+converted to an object. Since the filters get executed before checks, you
+can use them to instantiate the data, then use C<is_a> to check if you got
+a successful object.
+Optionally you can provide a custom error message. The default is I<Invalid value>.
+
+Example:
 
     use DateTime::Format::Natural;
     use Try::Tiny;
@@ -867,13 +902,16 @@ symbols>.
         ]
     };
 
-Checks if the value is an instance of a class. This can be particularly
-useful, when you need to parse dates or other user input that needs to get
-converted to an object. Since the filters get executed before checks, you
-can use them to instantiate the data, then use C<is_a> to check if you got
-a successful object.
 
 =head2 is_like
+
+    is_like ( $regexp, $optional_error_message );
+
+Checks if the value matches a regular expression.
+Optionally you can provide a custom error message. The default is I<Invalid value>.
+
+Example:
+
 
     my $rules = {
         checks => [
@@ -881,10 +919,14 @@ a successful object.
         ]
     };
 
-Checks if the value matches a regular expression. Optionally you can
-provide a custom error message.
-
 =head2 is_in
+
+    is_in ( $arrayref, $optional_error_message );
+
+Checks if the value matches a set of values.
+Optionally you can provide a custom error message. The default is I<Invalid value>.
+
+    Example:
 
     my @cities = qw/Alchevsk Kiev Odessa/;
     my $rules = {
@@ -893,8 +935,6 @@ provide a custom error message.
         ]
     };
 
-Checks if the value matches a set of values. Optionally you can provide a
-custom error message.
 
 =head1 OBJECT INTERFACE
 
