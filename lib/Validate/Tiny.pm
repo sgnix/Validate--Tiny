@@ -617,8 +617,11 @@ B<Example:>
         }
     ]
 
-A check subroutine must return undef if the check passes or a string with
-an error message if the check fails.
+A check subroutine must return undef if the check passes or a scalar containing
+an error message if the check fails.  The message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to
+an error object, etc.
+
 
 B<Example:>
 
@@ -654,7 +657,7 @@ B<Example:>
     };
 
 It may be a bit counter-intuitive for some people to return undef when the
-check passes and a string when it fails. If you have a huge problem with
+check passes and an error message when it fails. If you have a huge problem with
 this concept, then this module may not be right for you.
 
 B<Important!> Notice that in the beginning of C<is_good_password> we check
@@ -724,6 +727,12 @@ recommended approach:
 
 =head3 Check Support Routines
 
+Validate::Tiny provides a number of predicates to simplify writing
+rules.  They may be passed an optional error message.  Like those
+returned by custom check routines, the message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to an
+error object, etc.
+
 =head4 is_required
 
     is_required( $optional_error_message );
@@ -731,7 +740,7 @@ recommended approach:
 C<is_required> provides a shortcut to an anonymous subroutine that
 checks if the matched field is defined and it is not an empty
 string.
-Optionally, you can provide a custom error message. The default is I<Required>.
+Optionally, you can provide a custom error message. The default is the string,  I<Required>.
 
 
 =head4 is_required_if
@@ -741,7 +750,7 @@ Optionally, you can provide a custom error message. The default is I<Required>.
 Require a field conditionally. The condition can be either a scalar or a
 code reference that returns true/false value. If the condition is a code
 reference, it will be passed the C<$params> hash with all filtered fields.
-Optionally, you can provide a custom error message. The default is I<Required>.
+Optionally, you can provide a custom error message. The default is the string,  I<Required>.
 
 Example:
 
@@ -778,7 +787,7 @@ Second example:
 
 Much like C<is_required>, but checks if the field contains any value, even an
 empty string and C<undef>.
-Optionally, you can provide a custom error message. The default is I<Must be defined>.
+Optionally, you can provide a custom error message. The default is the string,  I<Must be defined>.
 
 =head4 is_equal
 
@@ -786,7 +795,7 @@ Optionally, you can provide a custom error message. The default is I<Must be def
 
 C<is_equal> checks if the value of the matched field is the same as the
 value of another field within the input hash.
-Optionally, you can provide a custom error message. The default is I<Invalid value>.
+Optionally, you can provide a custom error message. The default is the string,  I<Invalid value>.
 
 Example:
 
@@ -801,7 +810,7 @@ Example:
     is_long_between( $min, $max, $optional_error_message );
 
 Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
-you can provide a custom error message. The default is I<Invalid value>.
+you can provide a custom error message. The default is the string,  I<Invalid value>.
 
 Example:
 
@@ -817,7 +826,7 @@ Example:
     is_long_at_least( $length, $optional_error_message );
 
 Checks if the length of the value is >= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at least %i
+provide a custom error message. The default is the string,  I<Must be at least %i
 symbols>.
 
 Example:
@@ -834,7 +843,7 @@ Example:
     is_long_at_most( $length, $optional_error_message );
 
 Checks if the length of the value is <= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at the most %i
+provide a custom error message. The default is the string,  I<Must be at the most %i
 symbols>.
 
 Example:
@@ -855,7 +864,7 @@ useful, when you need to parse dates or other user input that needs to get
 converted to an object. Since the filters get executed before checks, you
 can use them to instantiate the data, then use C<is_a> to check if you got
 a successful object.
-Optionally you can provide a custom error message. The default is I<Invalid value>.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
 
 Example:
 
@@ -889,7 +898,7 @@ Example:
     is_like ( $regexp, $optional_error_message );
 
 Checks if the value matches a regular expression.
-Optionally you can provide a custom error message. The default is I<Invalid value>.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
 
 Example:
 
@@ -905,7 +914,7 @@ Example:
     is_in ( $arrayref, $optional_error_message );
 
 Checks if the value matches a set of values.
-Optionally you can provide a custom error message. The default is I<Invalid value>.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
 
     Example:
 
