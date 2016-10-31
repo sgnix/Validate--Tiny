@@ -466,18 +466,11 @@ each field.
 This module does not automatically export anything. You can optionally
 request any of the below subroutines or use ':all' to export all.
 
-=head1 PROCEDURAL INTERFACE
+=head1 RULES
 
-=head2 validate
-
-    use Validate::Tiny qw/validate/;
-
-    my $result = validate( \%input, \%rules );
-
-Validates user input against a set of rules. The input is expected to be a
-reference to a hash.
-
-=head3 %rules
+Rules provide the specifications for the three step validation
+process.  They are represented as a hash, containing references to the
+following three arrays: L</fields>, L</filters> and L</checks>.
 
     my %rules = (
         fields  => \@field_names,
@@ -485,10 +478,7 @@ reference to a hash.
         checks  => \@checks_array
     );
 
-C<rules> is a hash containing references to the following three arrays:
-L</fields>, L</filters> and L</checks>.
-
-=head4 fields
+=head2 fields
 
 An array containing the names of the fields that must be filtered, checked
 and returned. All others will be disregarded. As of version 0.981 you can
@@ -500,7 +490,7 @@ or
 
     my @field_names = ();   # Use all input fields
 
-=head4 filters
+=head2 filters
 
 An array containing name matches and filter subs. The array must have an
 even number of elements. Each I<odd> element is a field name match and
@@ -545,7 +535,7 @@ Some simple text filters are provided by the L</filter()> subroutine.
         name => filter(qw/strip trim lc/)
     );
 
-=head4 Adding custom filters
+=head3 Adding custom filters
 
 This module exposes C<our %FILTERS>, a hash containing available filters.
 To add a filter, add a new key-value to this hash:
@@ -556,7 +546,57 @@ To add a filter, add a new key-value to this hash:
         return $val;
     };
 
-=head4 checks
+=head3 Filter Support Routines
+
+=head4 filter
+
+    filter( $name1, $name2, ... );
+
+Provides a shortcut to some basic text filters. In reality, it returns a
+list of anonymous subs, so the following:
+
+    my $rules = {
+        filters => [
+            email => filter('lc', 'ucfirst')
+        ]
+    };
+
+is equivalent to this:
+
+    my $rules = {
+        filters => [
+            email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
+        ]
+    };
+
+It provides a shortcut for the following filters:
+
+=over
+
+=item trim
+
+Removes leading and trailing white space.
+
+=item strip
+
+Shrinks two or more white spaces to one.
+
+=item lc
+
+Lower case.
+
+=item uc
+
+Upper case.
+
+=item ucfirst
+
+Upper case first letter
+
+=back
+
+
+=head2 checks
 
 An array ref containing name matches and check subs. The array must have
 an even number of elements. Each I<odd> element is a field name match and
@@ -577,8 +617,11 @@ B<Example:>
         }
     ]
 
-A check subroutine must return undef if the check passes or a string with
-an error message if the check fails.
+A check subroutine must return undef if the check passes or a scalar containing
+an error message if the check fails.  The message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to
+an error object, etc.
+
 
 B<Example:>
 
@@ -614,7 +657,7 @@ B<Example:>
     };
 
 It may be a bit counter-intuitive for some people to return undef when the
-check passes and a string when it fails. If you have a huge problem with
+check passes and an error message when it fails. If you have a huge problem with
 this concept, then this module may not be right for you.
 
 B<Important!> Notice that in the beginning of C<is_good_password> we check
@@ -651,7 +694,7 @@ check if C<password> is defined inside C<is_good_password>, but it would
 be redundant. Also, this approach will fail if C<password> is not
 required, but must pass the rules for a good password if provided.
 
-=head4 Chaining
+=head3 Chaining
 
 The above example also shows that chaining check subroutines is available
 in the same fashion as chaining filter subroutines.  The difference
@@ -660,7 +703,7 @@ will always run B<all> filters, and a chain of checks will exit after the
 first failed check and return its error message.  This way the
 C<$result-E<gt>{error}> hash always has a single error message per field.
 
-=head4 Using closures
+=head3 Using closures
 
 When writing reusable check subroutines, sometimes you will want to be
 able to pass arguments. Returning closures (anonymous subs) is the
@@ -682,82 +725,32 @@ recommended approach:
         ]
     };
 
+=head3 Check Support Routines
 
-=head3 Return value
+Validate::Tiny provides a number of predicates to simplify writing
+rules.  They may be passed an optional error message.  Like those
+returned by custom check routines, the message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to an
+error object, etc.
 
-C<validate> returns a hash ref with three elements:
+=head4 is_required
 
-    my $result = validate(\%input, \%rules);
+    is_required( $optional_error_message );
 
-    # Now $result looks like this
-    $result = {
-        success => 1,       # or 0 if checks didn't pass
-        data    => \%data,
-        error   => \%error
-    };
+C<is_required> provides a shortcut to an anonymous subroutine that
+checks if the matched field is defined and it is not an empty
+string.
+Optionally, you can provide a custom error message. The default is the string,  I<Required>.
 
-If C<success> is 1 all of the filtered input will be in C<%data>,
-otherwise the error messages will be stored in C<%error>. If C<success> is
-0, C<%data> may or may not contain values, but its use is not recommended.
 
-=head2 filter
+=head4 is_required_if
 
-    filter( $name1, $name2, ... );
-
-Provides a shortcut to some basic text filters. In reality, it returns a
-list of anonymous subs, so the following:
-
-    my $rules = {
-        filters => [
-            email => filter('lc', 'ucfirst')
-        ]
-    };
-
-is equivalent to this:
-
-    my $rules = {
-        filters => [
-            email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
-        ]
-    };
-
-It provides a shortcut for the following filters:
-
-=head3 trim
-
-Removes leading and trailing white space.
-
-=head3 strip
-
-Shrinks two or more white spaces to one.
-
-=head3 lc
-
-Lower case.
-
-=head3 uc
-
-Upper case.
-
-=head3 ucfirst
-
-Upper case first letter
-
-=head2 is_required
-
-    is_required( $opt_error_msg );
-
-C<is_required> provides a shortcut to an anonymous subroutine that checks
-if the matched field is defined and it is not an empty string. Optionally,
-you can provide a custom error message to be returned.
-
-=head2 is_required_if
-
-    is_required_if( $condition, $err_msg );
+    is_required_if( $condition, $optional_error_message );
 
 Require a field conditionally. The condition can be either a scalar or a
 code reference that returns true/false value. If the condition is a code
 reference, it will be passed the C<$params> hash with all filtered fields.
+Optionally, you can provide a custom error message. The default is the string,  I<Required>.
 
 Example:
 
@@ -788,17 +781,23 @@ Second example:
         ]
     };
 
-=head2 is_existing
+=head4 is_existing
+
+    is_existing( $optional_error_message );
 
 Much like C<is_required>, but checks if the field contains any value, even an
 empty string and C<undef>.
+Optionally, you can provide a custom error message. The default is the string,  I<Must be defined>.
 
-=head2 is_equal
+=head4 is_equal
 
-    is_equal( $other_field_name, $opt_error_msg )
+    is_equal( $other_field_name, $optional_error_message );
 
 C<is_equal> checks if the value of the matched field is the same as the
-value of another field within the input hash. Example:
+value of another field within the input hash.
+Optionally, you can provide a custom error message. The default is the string,  I<Invalid value>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -806,7 +805,14 @@ value of another field within the input hash. Example:
         ]
     };
 
-=head2 is_long_between
+=head4 is_long_between
+
+    is_long_between( $min, $max, $optional_error_message );
+
+Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
+you can provide a custom error message. The default is the string,  I<Invalid value>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -814,10 +820,16 @@ value of another field within the input hash. Example:
         ]
     };
 
-Checks if the length of the value is >= C<$min> and <= C<$max>. Optionally
-you can provide a custom error message. The default is I<Invalid value>.
 
-=head2 is_long_at_least
+=head4 is_long_at_least
+
+    is_long_at_least( $length, $optional_error_message );
+
+Checks if the length of the value is >= C<$length>. Optionally you can
+provide a custom error message. The default is the string,  I<Must be at least %i
+symbols>.
+
+Example:
 
     my $rules = {
         checks => [
@@ -825,11 +837,16 @@ you can provide a custom error message. The default is I<Invalid value>.
         ]
     };
 
-Checks if the length of the value is >= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at least %i
+
+=head4 is_long_at_most
+
+    is_long_at_most( $length, $optional_error_message );
+
+Checks if the length of the value is <= C<$length>. Optionally you can
+provide a custom error message. The default is the string,  I<Must be at the most %i
 symbols>.
 
-=head2 is_long_at_most
+Example:
 
     my $rules = {
         checks => [
@@ -837,11 +854,19 @@ symbols>.
         ]
     };
 
-Checks if the length of the value is <= C<$length>. Optionally you can
-provide a custom error message. The default is I<Must be at the most %i
-symbols>.
 
-=head2 is_a
+=head4 is_a
+
+    is_a ( $class, $optional_error_message );
+
+Checks if the value is an instance of a class. This can be particularly
+useful, when you need to parse dates or other user input that needs to get
+converted to an object. Since the filters get executed before checks, you
+can use them to instantiate the data, then use C<is_a> to check if you got
+a successful object.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
+
+Example:
 
     use DateTime::Format::Natural;
     use Try::Tiny;
@@ -867,13 +892,16 @@ symbols>.
         ]
     };
 
-Checks if the value is an instance of a class. This can be particularly
-useful, when you need to parse dates or other user input that needs to get
-converted to an object. Since the filters get executed before checks, you
-can use them to instantiate the data, then use C<is_a> to check if you got
-a successful object.
 
-=head2 is_like
+=head4 is_like
+
+    is_like ( $regexp, $optional_error_message );
+
+Checks if the value matches a regular expression.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
+
+Example:
+
 
     my $rules = {
         checks => [
@@ -881,10 +909,14 @@ a successful object.
         ]
     };
 
-Checks if the value matches a regular expression. Optionally you can
-provide a custom error message.
+=head4 is_in
 
-=head2 is_in
+    is_in ( $arrayref, $optional_error_message );
+
+Checks if the value matches a set of values.
+Optionally you can provide a custom error message. The default is the string,  I<Invalid value>.
+
+    Example:
 
     my @cities = qw/Alchevsk Kiev Odessa/;
     my $rules = {
@@ -893,8 +925,36 @@ provide a custom error message.
         ]
     };
 
-Checks if the value matches a set of values. Optionally you can provide a
-custom error message.
+
+
+=head1 PROCEDURAL INTERFACE
+
+=head2 validate
+
+    use Validate::Tiny qw/validate/;
+
+    my $result = validate( \%input, \%rules );
+
+Validates user input against a set of rules. The input is expected to be a
+reference to a hash.
+
+=head3 Return value
+
+C<validate> returns a hash ref with three elements:
+
+    my $result = validate(\%input, \%rules);
+
+    # Now $result looks like this
+    $result = {
+        success => 1,       # or 0 if checks didn't pass
+        data    => \%data,
+        error   => \%error
+    };
+
+If C<success> is 1 all of the filtered input will be in C<%data>,
+otherwise the error messages will be stored in C<%error>. If C<success> is
+0, C<%data> may or may not contain values, but its use is not recommended.
+
 
 =head1 OBJECT INTERFACE
 
