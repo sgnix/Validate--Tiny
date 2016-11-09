@@ -1,5 +1,9 @@
 Revision history for Validate-Tiny
 
+1.6     2016-11-08
+	[Changes]
+	POD fixes (DJERIUS)
+
 1.551   2015-05-08
 
         [Bug fixes]

@@ -27,7 +27,7 @@ our %EXPORT_TAGS = (
     'all' => \@EXPORT_OK
 );
 
-our $VERSION = '1.551';
+our $VERSION = '1.6';
 
 our %FILTERS = (
     trim    => sub { return unless defined $_[0]; $_[0] =~ s/^\s+//; $_[0] =~ s/\s+$//; $_[0]  },
@@ -1044,6 +1044,7 @@ https://github.com/naturalist/Validate--Tiny
     val - valkoles@gmail.com
     Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
     Graham Ollis (cpan: PLICEASE)
+    Diab Jerius (cpan DJERIUS)
 
 =head1 LICENCE
 

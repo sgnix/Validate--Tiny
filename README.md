@@ -130,20 +130,11 @@ each field.
 This module does not automatically export anything. You can optionally
 request any of the below subroutines or use ':all' to export all.
 
-# PROCEDURAL INTERFACE
+# RULES
 
-## validate
-
-```perl
-use Validate::Tiny qw/validate/;
-
-my $result = validate( \%input, \%rules );
-```
-
-Validates user input against a set of rules. The input is expected to be a
-reference to a hash.
-
-### %rules
+Rules provide the specifications for the three step validation
+process.  They are represented as a hash, containing references to the
+following three arrays: ["fields"](#fields), ["filters"](#filters) and ["checks"](#checks).
 
 ```perl
 my %rules = (
@@ -153,10 +144,7 @@ my %rules = (
 );
 ```
 
-`rules` is a hash containing references to the following three arrays:
-["fields"](#fields), ["filters"](#filters) and ["checks"](#checks).
-
-#### fields
+## fields
 
 An array containing the names of the fields that must be filtered, checked
 and returned. All others will be disregarded. As of version 0.981 you can
@@ -172,7 +160,7 @@ or
 my @field_names = ();   # Use all input fields
 ```
 
-#### filters
+## filters
 
 An array containing name matches and filter subs. The array must have an
 even number of elements. Each _odd_ element is a field name match and
@@ -225,7 +213,7 @@ my @filters_array = (
 );
 ```
 
-#### Adding custom filters
+### Adding custom filters
 
 This module exposes `our %FILTERS`, a hash containing available filters.
 To add a filter, add a new key-value to this hash:
@@ -238,7 +226,58 @@ $Validate::Tiny::FILTERS{only_digits} = sub {
 };
 ```
 
-#### checks
+### Filter Support Routines
+
+#### filter
+
+```
+filter( $name1, $name2, ... );
+```
+
+Provides a shortcut to some basic text filters. In reality, it returns a
+list of anonymous subs, so the following:
+
+```perl
+my $rules = {
+    filters => [
+        email => filter('lc', 'ucfirst')
+    ]
+};
+```
+
+is equivalent to this:
+
+```perl
+my $rules = {
+    filters => [
+        email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
+    ]
+};
+```
+
+It provides a shortcut for the following filters:
+
+- trim
+
+    Removes leading and trailing white space.
+
+- strip
+
+    Shrinks two or more white spaces to one.
+
+- lc
+
+    Lower case.
+
+- uc
+
+    Upper case.
+
+- ucfirst
+
+    Upper case first letter
+
+## checks
 
 An array ref containing name matches and check subs. The array must have
 an even number of elements. Each _odd_ element is a field name match and
@@ -261,8 +300,10 @@ checks => [
 ]
 ```
 
-A check subroutine must return undef if the check passes or a string with
-an error message if the check fails.
+A check subroutine must return undef if the check passes or a scalar containing
+an error message if the check fails.  The message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to
+an error object, etc.
 
 **Example:**
 
@@ -300,7 +341,7 @@ my $rules = {
 ```
 
 It may be a bit counter-intuitive for some people to return undef when the
-check passes and a string when it fails. If you have a huge problem with
+check passes and an error message when it fails. If you have a huge problem with
 this concept, then this module may not be right for you.
 
 **Important!** Notice that in the beginning of `is_good_password` we check
@@ -341,7 +382,7 @@ check if `password` is defined inside `is_good_password`, but it would
 be redundant. Also, this approach will fail if `password` is not
 required, but must pass the rules for a good password if provided.
 
-#### Chaining
+### Chaining
 
 The above example also shows that chaining check subroutines is available
 in the same fashion as chaining filter subroutines.  The difference
@@ -350,7 +391,7 @@ will always run **all** filters, and a chain of checks will exit after the
 first failed check and return its error message.  This way the
 `$result->{error}` hash always has a single error message per field.
 
-#### Using closures
+### Using closures
 
 When writing reusable check subroutines, sometimes you will want to be
 able to pass arguments. Returning closures (anonymous subs) is the
@@ -374,93 +415,35 @@ my $rules = {
 };
 ```
 
-### Return value
+### Check Support Routines
 
-`validate` returns a hash ref with three elements:
+Validate::Tiny provides a number of predicates to simplify writing
+rules.  They may be passed an optional error message.  Like those
+returned by custom check routines, the message is not interpreted by
+Validate::Tiny, so may take any form, e.g. a string, a reference to an
+error object, etc.
 
-```perl
-my $result = validate(\%input, \%rules);
-
-# Now $result looks like this
-$result = {
-    success => 1,       # or 0 if checks didn't pass
-    data    => \%data,
-    error   => \%error
-};
-```
-
-If `success` is 1 all of the filtered input will be in `%data`,
-otherwise the error messages will be stored in `%error`. If `success` is
-0, `%data` may or may not contain values, but its use is not recommended.
-
-## filter
+#### is\_required
 
 ```
-filter( $name1, $name2, ... );
+is_required( $optional_error_message );
 ```
 
-Provides a shortcut to some basic text filters. In reality, it returns a
-list of anonymous subs, so the following:
+`is_required` provides a shortcut to an anonymous subroutine that
+checks if the matched field is defined and it is not an empty
+string.
+Optionally, you can provide a custom error message. The default is the string,  _Required_.
 
-```perl
-my $rules = {
-    filters => [
-        email => filter('lc', 'ucfirst')
-    ]
-};
-```
-
-is equivalent to this:
-
-```perl
-my $rules = {
-    filters => [
-        email => [ sub{ lc $_[0] }, sub{ ucfirst $_[0] } ]
-    ]
-};
-```
-
-It provides a shortcut for the following filters:
-
-### trim
-
-Removes leading and trailing white space.
-
-### strip
-
-Shrinks two or more white spaces to one.
-
-### lc
-
-Lower case.
-
-### uc
-
-Upper case.
-
-### ucfirst
-
-Upper case first letter
-
-## is\_required
+#### is\_required\_if
 
 ```
-is_required( $opt_error_msg );
-```
-
-`is_required` provides a shortcut to an anonymous subroutine that checks
-if the matched field is defined and it is not an empty string. Optionally,
-you can provide a custom error message to be returned.
-
-## is\_required\_if
-
-```
-is_required_if( $condition, $err_msg );
+is_required_if( $condition, $optional_error_message );
 ```
 
 Require a field conditionally. The condition can be either a scalar or a
 code reference that returns true/false value. If the condition is a code
 reference, it will be passed the `$params` hash with all filtered fields.
+Optionally, you can provide a custom error message. The default is the string,  _Required_.
 
 Example:
 
@@ -495,19 +478,27 @@ my $rules = {
 };
 ```
 
-## is\_existing
+#### is\_existing
+
+```
+is_existing( $optional_error_message );
+```
 
 Much like `is_required`, but checks if the field contains any value, even an
 empty string and `undef`.
+Optionally, you can provide a custom error message. The default is the string,  _Must be defined_.
 
-## is\_equal
+#### is\_equal
 
 ```
-is_equal( $other_field_name, $opt_error_msg )
+is_equal( $other_field_name, $optional_error_message );
 ```
 
 `is_equal` checks if the value of the matched field is the same as the
-value of another field within the input hash. Example:
+value of another field within the input hash.
+Optionally, you can provide a custom error message. The default is the string,  _Invalid value_.
+
+Example:
 
 ```perl
 my $rules = {
@@ -517,7 +508,16 @@ my $rules = {
 };
 ```
 
-## is\_long\_between
+#### is\_long\_between
+
+```
+is_long_between( $min, $max, $optional_error_message );
+```
+
+Checks if the length of the value is >= `$min` and <= `$max`. Optionally
+you can provide a custom error message. The default is the string,  _Invalid value_.
+
+Example:
 
 ```perl
 my $rules = {
@@ -527,10 +527,17 @@ my $rules = {
 };
 ```
 
-Checks if the length of the value is >= `$min` and <= `$max`. Optionally
-you can provide a custom error message. The default is _Invalid value_.
+#### is\_long\_at\_least
 
-## is\_long\_at\_least
+```
+is_long_at_least( $length, $optional_error_message );
+```
+
+Checks if the length of the value is >= `$length`. Optionally you can
+provide a custom error message. The default is the string,  _Must be at least %i
+symbols_.
+
+Example:
 
 ```perl
 my $rules = {
@@ -540,11 +547,17 @@ my $rules = {
 };
 ```
 
-Checks if the length of the value is >= `$length`. Optionally you can
-provide a custom error message. The default is _Must be at least %i
+#### is\_long\_at\_most
+
+```
+is_long_at_most( $length, $optional_error_message );
+```
+
+Checks if the length of the value is <= `$length`. Optionally you can
+provide a custom error message. The default is the string,  _Must be at the most %i
 symbols_.
 
-## is\_long\_at\_most
+Example:
 
 ```perl
 my $rules = {
@@ -554,11 +567,20 @@ my $rules = {
 };
 ```
 
-Checks if the length of the value is <= `$length`. Optionally you can
-provide a custom error message. The default is _Must be at the most %i
-symbols_.
+#### is\_a
 
-## is\_a
+```
+is_a ( $class, $optional_error_message );
+```
+
+Checks if the value is an instance of a class. This can be particularly
+useful, when you need to parse dates or other user input that needs to get
+converted to an object. Since the filters get executed before checks, you
+can use them to instantiate the data, then use `is_a` to check if you got
+a successful object.
+Optionally you can provide a custom error message. The default is the string,  _Invalid value_.
+
+Example:
 
 ```perl
 use DateTime::Format::Natural;
@@ -586,13 +608,16 @@ my $rules = {
 };
 ```
 
-Checks if the value is an instance of a class. This can be particularly
-useful, when you need to parse dates or other user input that needs to get
-converted to an object. Since the filters get executed before checks, you
-can use them to instantiate the data, then use `is_a` to check if you got
-a successful object.
+#### is\_like
 
-## is\_like
+```
+is_like ( $regexp, $optional_error_message );
+```
+
+Checks if the value matches a regular expression.
+Optionally you can provide a custom error message. The default is the string,  _Invalid value_.
+
+Example:
 
 ```perl
 my $rules = {
@@ -602,12 +627,18 @@ my $rules = {
 };
 ```
 
-Checks if the value matches a regular expression. Optionally you can
-provide a custom error message.
+#### is\_in
 
-## is\_in
+```
+is_in ( $arrayref, $optional_error_message );
+```
+
+Checks if the value matches a set of values.
+Optionally you can provide a custom error message. The default is the string,  _Invalid value_.
 
 ```perl
+Example:
+
 my @cities = qw/Alchevsk Kiev Odessa/;
 my $rules = {
     checks => [
@@ -616,8 +647,37 @@ my $rules = {
 };
 ```
 
-Checks if the value matches a set of values. Optionally you can provide a
-custom error message.
+# PROCEDURAL INTERFACE
+
+## validate
+
+```perl
+use Validate::Tiny qw/validate/;
+
+my $result = validate( \%input, \%rules );
+```
+
+Validates user input against a set of rules. The input is expected to be a
+reference to a hash.
+
+### Return value
+
+`validate` returns a hash ref with three elements:
+
+```perl
+my $result = validate(\%input, \%rules);
+
+# Now $result looks like this
+$result = {
+    success => 1,       # or 0 if checks didn't pass
+    data    => \%data,
+    error   => \%error
+};
+```
+
+If `success` is 1 all of the filtered input will be in `%data`,
+otherwise the error messages will be stored in `%error`. If `success` is
+0, `%data` may or may not contain values, but its use is not recommended.
 
 # OBJECT INTERFACE
 
@@ -717,6 +777,8 @@ Ivan Simonik (cpan: SIMONIKI) - simoniki@cpan.org
 Daya Sagar Nune (cpan: DAYANUNE) - daya.webtech@gmail.com
 val - valkoles@gmail.com
 Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
+Graham Ollis (cpan: PLICEASE)
+Diab Jerius (cpan DJERIUS)
 ```
 
 # LICENCE
