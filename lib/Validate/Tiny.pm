@@ -1045,6 +1045,7 @@ https://github.com/naturalist/Validate--Tiny
     Patrice Clement (cpan: MONSIEURP) - monsieurp@gentoo.org
     Graham Ollis (cpan: PLICEASE)
     Diab Jerius (cpan DJERIUS)
+    Mohammad S Anwar
 
 =head1 LICENSE
 
