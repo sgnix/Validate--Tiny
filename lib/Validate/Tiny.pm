@@ -1046,10 +1046,9 @@ https://github.com/naturalist/Validate--Tiny
     Graham Ollis (cpan: PLICEASE)
     Diab Jerius (cpan DJERIUS)
 
-=head1 LICENCE
+=head1 LICENSE
 
 This program is free software; you can redistribute it and/or modify it
 under the terms as perl itself.
 
 =cut
-
